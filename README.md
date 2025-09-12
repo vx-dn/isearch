@@ -28,55 +28,213 @@ A serverless receipt search application built with AWS Lambda, FastAPI, and Meil
    cd isearch
    ```
 
-2. **Install dependencies**:
+2. **Setup environment variables**:
    ```bash
    cd backend
+   cp .env.example .env
+   # Edit .env with your actual values (never commit this file!)
+   ```
+
+3. **Install dependencies**:
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run tests**:
+4. **Run tests**:
    ```bash
    pytest
    ```
+
+### Important: Environment Variables Security
+
+- **`.env`** files contain sensitive information and should **NEVER** be committed to git
+- **`.env.example`** shows the required variables (safe to commit)
+- Always copy `.env.example` to `.env` and modify with your actual values
+- The `.gitignore` file ensures `.env` files are excluded from git
 
 ### Deployment
 
 #### Option 1: GitHub Actions (Recommended)
 
-1. **Configure secrets** in GitHub repository settings → Secrets and variables → Actions:
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `MEILISEARCH_MASTER_KEY`
+**Step 1: Configure GitHub Secrets**
 
-2. **Manual trigger**:
-   - Go to Actions tab in GitHub
-   - Select "🔧 Hybrid Flexible CI/CD" workflow
-   - Click "Run workflow"
-   - Choose environment: `dev`
-   - Enable "Deploy infrastructure" if needed
+Go to your GitHub repository → Settings → Secrets and variables → Actions and add:
 
-3. **Automatic trigger**: Push to `main` or `develop` branch
+```bash
+# Required secrets:
+AWS_ACCESS_KEY_ID           # Your AWS access key
+AWS_SECRET_ACCESS_KEY       # Your AWS secret key  
+MEILISEARCH_MASTER_KEY     # Generate: openssl rand -base64 32
+
+# Optional (for staging/prod):
+AWS_ACCESS_KEY_ID_STAGING
+AWS_SECRET_ACCESS_KEY_STAGING
+MEILISEARCH_MASTER_KEY_STAGING
+AWS_ACCESS_KEY_ID_PROD
+AWS_SECRET_ACCESS_KEY_PROD
+MEILISEARCH_MASTER_KEY_PROD
+```
+
+**Step 2: Deploy via GitHub Actions**
+
+**Option A - Manual Trigger (First deployment):**
+1. Go to GitHub repository → Actions tab
+2. Select "🔧 Hybrid Flexible CI/CD" workflow
+3. Click "Run workflow" 
+4. Configure options:
+   - Environment: `dev`
+   - Run tests: `true`
+   - Deploy infrastructure: `true` (for first deployment)
+5. Click "Run workflow"
+
+**Option B - Automatic Trigger:**
+- Push to `main` or `develop` branch
+- Create pull request to `main`
+- Workflow runs automatically with smart deployment detection
+
+**Step 3: Monitor Deployment**
+1. Watch the workflow execution in Actions tab
+2. Check for any failures in individual jobs
+3. View deployment logs for troubleshooting
 
 #### Option 2: Manual Deployment
 
-1. **Deploy infrastructure**:
+**Prerequisites:**
+```bash
+# Install required tools
+aws --version          # AWS CLI v2
+terraform --version    # Terraform >= 1.0
+python --version       # Python 3.10+
+
+# Configure AWS credentials
+aws configure
+# OR export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+```
+
+**Step 1: Deploy Infrastructure**
+```bash
+cd infrastructure/terraform
+
+# Initialize Terraform
+terraform init
+
+# Review deployment plan
+terraform plan -var-file=environments/dev.tfvars
+
+# Deploy infrastructure (takes ~5-10 minutes)
+terraform apply -var-file=environments/dev.tfvars
+
+# Note the outputs (API Gateway URL, Cognito details, etc.)
+terraform output
+```
+
+**Step 2: Set Environment Variables**
+```bash
+# Export Terraform outputs
+export MEILISEARCH_MASTER_KEY="your_generated_key"
+export COGNITO_USER_POOL_ID=$(terraform output -raw cognito_user_pool_id)
+export COGNITO_CLIENT_ID=$(terraform output -raw cognito_client_id)
+export API_GATEWAY_URL=$(terraform output -raw api_gateway_url)
+```
+
+**Step 3: Deploy Lambda Functions**
+```bash
+cd ../../backend/deploy
+
+# Make scripts executable
+chmod +x *.sh
+
+# Deploy all Lambda functions
+./deploy_lambda.sh
+
+# Verify deployment
+./test_deployment.sh
+```
+
+**Step 4: Test End-to-End**
+```bash
+# Test the complete pipeline
+./test_pipeline.sh
+
+# Test authentication
+./test_auth.sh
+
+# Check API health
+curl $API_GATEWAY_URL/api/v1/health
+```
+
+#### Post-Deployment Verification
+
+**Check Infrastructure:**
+```bash
+# Verify AWS resources
+aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `receipt-search-dev`)].FunctionName'
+aws apigateway get-rest-apis --query 'items[?name==`receipt-search-dev-api`]'
+aws ec2 describe-instances --filters "Name=tag:Name,Values=receipt-search-dev-meilisearch"
+
+# Check Terraform state
+cd infrastructure/terraform && terraform show
+```
+
+**Test API Endpoints:**
+```bash
+API_URL="https://your-api-id.execute-api.ap-southeast-1.amazonaws.com/dev"
+
+# Health check
+curl $API_URL/api/v1/health
+
+# Create test user (replace with valid email)
+aws cognito-idp admin-create-user \
+  --user-pool-id $COGNITO_USER_POOL_ID \
+  --username test@example.com \
+  --temporary-password "TempPass123!" \
+  --message-action SUPPRESS
+```
+
+#### Troubleshooting Deployment
+
+**Common Issues:**
+
+1. **Terraform Permission Errors:**
    ```bash
-   cd infrastructure/terraform
-   terraform init
-   terraform plan -var-file=environments/dev.tfvars
-   terraform apply -var-file=environments/dev.tfvars
+   # Ensure your AWS user has these policies:
+   # - PowerUserAccess (recommended)
+   # - Or custom policy with EC2, Lambda, API Gateway, Cognito, S3, DynamoDB, SQS, IAM permissions
    ```
 
-2. **Deploy Lambda functions**:
+2. **Lambda Deployment Failures:**
    ```bash
-   cd backend/deploy
-   ./deploy_lambda.sh
+   # Check if infrastructure is deployed first
+   terraform output
+   
+   # Verify Lambda package exists
+   ls -la backend/deploy/lambda-deployment-package.zip
+   
+   # Check CloudWatch logs
+   aws logs describe-log-groups --log-group-name-prefix /aws/lambda/receipt-search-dev
    ```
 
-3. **Test deployment**:
+3. **Meilisearch Connection Issues:**
    ```bash
-   ./test_deployment.sh
+   # Check if EC2 instance is running
+   aws ec2 describe-instances --filters "Name=tag:Name,Values=receipt-search-dev-meilisearch"
+   
+   # Check security group allows port 7700
+   # Meilisearch runs in private subnet, accessible only from Lambda functions
    ```
+
+#### First-Time Setup Checklist
+
+- [ ] AWS CLI configured with appropriate permissions
+- [ ] GitHub secrets configured
+- [ ] Terraform infrastructure deployed successfully
+- [ ] Lambda functions deployed and responding
+- [ ] API Gateway endpoints returning expected responses
+- [ ] Cognito user pool accessible
+- [ ] Meilisearch instance running
+- [ ] S3 bucket created and accessible
+- [ ] DynamoDB tables created
+- [ ] CloudWatch logs showing function executions
 
 ## 🔧 Configuration
 
