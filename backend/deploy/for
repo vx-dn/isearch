@@ -1,0 +1,28 @@
+Script started on 2025-09-11 21:16:11+07:00 [TERM="xterm-256color" TTY="/dev/pts/11" COLUMNS="129" LINES="16"]
+[?2004h]0;dev@DESKTOP-5SJSHHT: ~/psearch/receipt-search-app/backend/deploy[01;32mdev@DESKTOP-5SJSHHT[00m:[01;34m~/psearch/receipt-search-app/backend/deploy[00m$ ^C[?2004l[?2004h[?2004l
+[?2004h]0;dev@DESKTOP-5SJSHHT: ~/psearch/receipt-search-app/backend/deploy[01;32mdev@DESKTOP-5SJSHHT[00m:[01;34m~/psearch/receipt-search-app/backend/deploy[00m$ cd /home/dev/psearch/receipt-search-app/backend/deploy && bash -x ./deploy_lambda.sh --help 2>&1 | head -20
+[?2004l+ set -e
++++ dirname ./deploy_lambda.sh
+++ cd .
+++ pwd
++ SCRIPT_DIR=/home/dev/psearch/receipt-search-app/backend/deploy
+++ dirname /home/dev/psearch/receipt-search-app/backend/deploy
++ BACKEND_DIR=/home/dev/psearch/receipt-search-app/backend
+++ dirname /home/dev/psearch/receipt-search-app/backend
++ PROJECT_ROOT=/home/dev/psearch/receipt-search-app
++ INFRASTRUCTURE_DIR=/home/dev/psearch/receipt-search-app/infrastructure
++ RED='\033[0;31m'
++ GREEN='\033[0;32m'
++ YELLOW='\033[1;33m'
++ NC='\033[0m'
++ ENVIRONMENT=dev
++ AWS_REGION=ap-southeast-1
++ FUNCTION_NAME=
++ DEPLOY_ALL=false
++ PACKAGE_ONLY=false
++ [[ 1 -gt 0 ]]
+[?2004h]0;dev@DESKTOP-5SJSHHT: ~/psearch/receipt-search-app/backend/deploy[01;32mdev@DESKTOP-5SJSHHT[00m:[01;34m~/psearch/receipt-search-app/backend/deploy[00m$ 
+[?2004l[?2004h]0;dev@DESKTOP-5SJSHHT: ~/psearch/receipt-search-app/backend/deploy[01;32mdev@DESKTOP-5SJSHHT[00m:[01;34m~/psearch/receipt-search-app/backend/deploy[00m$ [?2004l
+exit
+
+Script done on 2025-09-11 21:32:30+07:00 [COMMAND_EXIT_CODE="0"]

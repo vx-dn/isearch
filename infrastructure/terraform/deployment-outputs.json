@@ -1,0 +1,97 @@
+{
+  "api_gateway_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "yj4tbf5cs8"
+  },
+  "api_gateway_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://yj4tbf5cs8.execute-api.ap-southeast-1.amazonaws.com/dev"
+  },
+  "cognito_domain": {
+    "sensitive": false,
+    "type": "string",
+    "value": "receipt-search-dev-dev"
+  },
+  "cognito_user_pool_client_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "5foh5mtaojm3s0f508kkodmr41"
+  },
+  "cognito_user_pool_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "ap-southeast-1_vrebfmaTY"
+  },
+  "image_processor_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::850027065033:role/receipt-search-dev-image-processor-role"
+  },
+  "lambda_execution_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::850027065033:role/receipt-search-dev-lambda-execution-role"
+  },
+  "lambda_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-0ccb66f62dcbaf821"
+  },
+  "meilisearch_instance_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "i-0b8ca25b1d62c3352"
+  },
+  "meilisearch_private_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "10.0.2.167"
+  },
+  "meilisearch_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-03f0e021cb3f4f4ac"
+  },
+  "processing_queue_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:sqs:ap-southeast-1:850027065033:receipt-search-dev-processing-queue"
+  },
+  "processing_queue_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://sqs.ap-southeast-1.amazonaws.com/850027065033/receipt-search-dev-processing-queue"
+  },
+  "receipts_bucket_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:s3:::receipt-search-dev-receipts-f11ff3a6"
+  },
+  "receipts_bucket_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "receipt-search-dev-receipts-f11ff3a6"
+  },
+  "receipts_table_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "receipt-search-dev-receipts"
+  },
+  "text_extractor_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::850027065033:role/receipt-search-dev-text-extractor-role"
+  },
+  "users_table_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "receipt-search-dev-users"
+  },
+  "vpc_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "vpc-01d6e146c75580374"
+  }
+}

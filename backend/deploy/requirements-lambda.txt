@@ -1,0 +1,28 @@
+# Lambda function dependencies
+# Keep this minimal to reduce package size
+
+# AWS SDK (boto3 is included in Lambda runtime, but we specify for local dev)
+boto3>=1.28.0
+botocore>=1.31.0
+
+# FastAPI and dependencies for API handler
+fastapi>=0.104.0
+pydantic>=2.4.0
+mangum>=0.17.0
+
+# HTTP client for Meilisearch API calls
+requests>=2.31.0
+
+# JSON processing
+python-dateutil>=2.8.2
+
+# Database drivers
+psycopg2-binary>=2.9.7
+
+# Password hashing
+passlib>=1.7.4
+bcrypt>=4.0.1
+
+# JWT tokens
+python-jose>=3.3.0
+cryptography>=41.0.4
