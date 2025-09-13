@@ -1,0 +1,54 @@
+# Ruff configuration
+# https://docs.astral.sh/ruff/configuration/
+
+# Global settings
+line-length = 88
+exclude = [
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    "venv",
+    ".venv",
+    "htmlcov",
+]
+
+[lint]
+# Enable specific rule sets
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "S",   # flake8-bandit (security)
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "S101",  # Use of assert (common in tests)
+    "S603",  # subprocess without shell=True check
+    "S607",  # Starting a process with a partial executable path
+    "B008",  # Function calls in defaults (needed for FastAPI dependencies)
+    "B904",  # Exception chaining (TODO: fix later for better error handling)
+    "S608",  # SQL injection warnings (false positives for f-strings in logs)
+    "S110",  # try-except-pass (acceptable for S3 cleanup operations)
+    "S104",  # Binding to all interfaces (needed for development server)
+    "S105",  # Hardcoded password warnings (false positives for constant strings)
+    "N802",  # Function name case (property names need to match config constants)
+    "N818",  # Exception naming (DomainException is intentional base class name)
+]
+
+[lint.per-file-ignores]
+# Allow certain security issues in tests
+"tests/**/*.py" = ["S", "E501", "B015", "B023"]
+# Allow imports not at top in deploy scripts (AWS imports)
+"deploy/**/*.py" = ["E402"]
+
+[format]
+# Use double quotes for strings
+quote-style = "double"

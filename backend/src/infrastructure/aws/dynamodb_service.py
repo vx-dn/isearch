@@ -1,9 +1,10 @@
 """AWS DynamoDB service implementation."""
 
-import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any, Optional
+
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class DynamoDBService:
         self.dynamodb = boto3.resource("dynamodb", region_name=region_name)
         self.client = boto3.client("dynamodb", region_name=region_name)
 
-    async def put_item(self, table_name: str, item: Dict[str, Any]) -> bool:
+    async def put_item(self, table_name: str, item: dict[str, Any]) -> bool:
         """Put an item into DynamoDB table."""
         try:
             table = self.dynamodb.Table(table_name)
@@ -28,8 +29,8 @@ class DynamoDBService:
             return False
 
     async def get_item(
-        self, table_name: str, key: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, table_name: str, key: dict[str, Any]
+    ) -> Optional[dict[str, Any]]:
         """Get an item from DynamoDB table."""
         try:
             table = self.dynamodb.Table(table_name)
@@ -42,10 +43,10 @@ class DynamoDBService:
     async def update_item(
         self,
         table_name: str,
-        key: Dict[str, Any],
+        key: dict[str, Any],
         update_expression: str,
-        expression_attribute_values: Dict[str, Any],
-        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: dict[str, Any],
+        expression_attribute_names: Optional[dict[str, str]] = None,
     ) -> bool:
         """Update an item in DynamoDB table."""
         try:
@@ -66,7 +67,7 @@ class DynamoDBService:
             logger.error(f"Failed to update item in {table_name}: {e}")
             return False
 
-    async def delete_item(self, table_name: str, key: Dict[str, Any]) -> bool:
+    async def delete_item(self, table_name: str, key: dict[str, Any]) -> bool:
         """Delete an item from DynamoDB table."""
         try:
             table = self.dynamodb.Table(table_name)
@@ -81,13 +82,13 @@ class DynamoDBService:
         self,
         table_name: str,
         key_condition_expression: str,
-        expression_attribute_values: Dict[str, Any],
-        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: dict[str, Any],
+        expression_attribute_names: Optional[dict[str, str]] = None,
         index_name: Optional[str] = None,
         limit: Optional[int] = None,
-        exclusive_start_key: Optional[Dict[str, Any]] = None,
+        exclusive_start_key: Optional[dict[str, Any]] = None,
         scan_index_forward: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Query items from DynamoDB table."""
         try:
             table = self.dynamodb.Table(table_name)
@@ -125,8 +126,8 @@ class DynamoDBService:
     async def batch_write(
         self,
         table_name: str,
-        items: List[Dict[str, Any]],
-        delete_keys: List[Dict[str, Any]] = None,
+        items: list[dict[str, Any]],
+        delete_keys: list[dict[str, Any]] = None,
     ) -> int:
         """Batch write items to DynamoDB table."""
         try:
@@ -153,11 +154,11 @@ class DynamoDBService:
         self,
         table_name: str,
         filter_expression: Optional[str] = None,
-        expression_attribute_values: Optional[Dict[str, Any]] = None,
-        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: Optional[dict[str, Any]] = None,
+        expression_attribute_names: Optional[dict[str, str]] = None,
         limit: Optional[int] = None,
-        exclusive_start_key: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        exclusive_start_key: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Scan DynamoDB table."""
         try:
             table = self.dynamodb.Table(table_name)

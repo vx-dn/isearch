@@ -3,11 +3,12 @@
 import uuid
 from datetime import datetime
 from typing import Protocol
-from ..entities import Receipt, ProcessingStatus
-from ..repositories import ReceiptRepository, UserRepository
-from ..dtos import UploadReceiptRequest, UploadReceiptResponse
-from ..exceptions import QuotaExceededError, ValidationError, ResourceNotFoundError
+
 from ..config import DOMAIN_CONFIG
+from ..dtos import UploadReceiptRequest, UploadReceiptResponse
+from ..entities import ProcessingStatus, Receipt
+from ..exceptions import QuotaExceededError, ResourceNotFoundError, ValidationError
+from ..repositories import ReceiptRepository, UserRepository
 
 
 class S3Service(Protocol):

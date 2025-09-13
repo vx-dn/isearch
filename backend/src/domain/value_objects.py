@@ -1,9 +1,9 @@
 """Domain value objects."""
 
+import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
-import uuid
 
 
 @dataclass(frozen=True)

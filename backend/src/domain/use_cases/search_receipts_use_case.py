@@ -2,10 +2,11 @@
 
 from datetime import datetime
 from typing import Protocol
-from ..repositories import SearchRepository, UserRepository
+
+from ..config import DOMAIN_CONFIG
 from ..dtos import ReceiptSearchRequest, ReceiptSearchResponse, ReceiptSearchResult
 from ..exceptions import ResourceNotFoundError, ValidationError
-from ..config import DOMAIN_CONFIG
+from ..repositories import SearchRepository, UserRepository
 
 
 class S3Service(Protocol):
@@ -65,9 +66,9 @@ class SearchReceiptsUseCase:
             # Implementation depends on how dates are extracted and stored
             filters["extracted_date"] = {}
             if request.date_extracted_from:
-                filters["extracted_date"][
-                    "gte"
-                ] = request.date_extracted_from.timestamp()
+                filters["extracted_date"]["gte"] = (
+                    request.date_extracted_from.timestamp()
+                )
             if request.date_extracted_to:
                 filters["extracted_date"]["lte"] = request.date_extracted_to.timestamp()
 

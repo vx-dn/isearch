@@ -1,12 +1,14 @@
 """End-to-end tests for error scenarios and edge cases."""
 
-import pytest
-from unittest.mock import patch
 import uuid
+from unittest.mock import patch
+
+import pytest
 from fastapi import status
-from src.domain.exceptions import ValidationError, ReceiptNotFoundError
-from src.application.auth.middleware import get_current_active_user
+
 from main import app
+from src.application.auth.middleware import get_current_active_user
+from src.domain.exceptions import ReceiptNotFoundError, ValidationError
 
 
 @pytest.mark.e2e
@@ -147,12 +149,14 @@ class TestConcurrencyScenarios:
         )
 
         try:
-            with patch(
-                "src.application.api.routes.receipts.receipt_service.create_receipt"
-            ) as mock_create_receipt, patch(
-                "src.application.api.routes.receipts.receipt_service.update_receipt"
-            ) as mock_update_receipt:
-
+            with (
+                patch(
+                    "src.application.api.routes.receipts.receipt_service.create_receipt"
+                ) as mock_create_receipt,
+                patch(
+                    "src.application.api.routes.receipts.receipt_service.update_receipt"
+                ) as mock_update_receipt,
+            ):
                 receipt_id = str(uuid.uuid4())
                 receipt_data = {
                     "receipt_id": receipt_id,
@@ -207,8 +211,9 @@ class TestDataIntegrityScenarios:
 
         # Create a mock service for dependency override
         from unittest.mock import AsyncMock, patch
-        from src.application.services.receipt_service import ReceiptService
+
         from src.application.auth.middleware import get_current_active_user
+        from src.application.services.receipt_service import ReceiptService
         from src.domain.exceptions import ReceiptNotFoundError
 
         mock_service = AsyncMock(spec=ReceiptService)
@@ -254,8 +259,9 @@ class TestRateLimitingScenarios:
 
         # Create a mock service for dependency override
         from unittest.mock import AsyncMock, patch
-        from src.application.services.receipt_service import ReceiptService
+
         from src.application.auth.middleware import get_current_active_user
+        from src.application.services.receipt_service import ReceiptService
 
         mock_service = AsyncMock(spec=ReceiptService)
 
@@ -306,8 +312,9 @@ class TestSecurityScenarios:
 
         # Create a mock service for dependency override
         from unittest.mock import AsyncMock, patch
-        from src.application.services.receipt_service import ReceiptService
+
         from src.application.auth.middleware import get_current_active_user
+        from src.application.services.receipt_service import ReceiptService
         from src.domain.exceptions import ReceiptNotFoundError
 
         mock_service = AsyncMock(spec=ReceiptService)
@@ -343,8 +350,9 @@ class TestSecurityScenarios:
 
         # Create a mock service for dependency override
         from unittest.mock import AsyncMock, patch
-        from src.application.services.search_service import SearchService
+
         from src.application.auth.middleware import get_current_active_user
+        from src.application.services.search_service import SearchService
 
         mock_service = AsyncMock(spec=SearchService)
 

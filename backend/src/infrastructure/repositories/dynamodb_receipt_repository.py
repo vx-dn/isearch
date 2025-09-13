@@ -1,14 +1,14 @@
 """DynamoDB implementation of receipt repository."""
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+from typing import Any, Optional
 
+from src.domain.config import DOMAIN_CONFIG
 from src.domain.entities.receipt import Receipt
+from src.domain.exceptions import DatabaseError
 from src.domain.repositories.receipt_repository import ReceiptRepository
 from src.infrastructure.aws.dynamodb_service import DynamoDBService
-from src.domain.exceptions import DatabaseError
-from src.domain.config import DOMAIN_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class DynamoDBReceiptRepository(ReceiptRepository):
         self.dynamodb_service = dynamodb_service
         self.table_name = DOMAIN_CONFIG.RECEIPT_TABLE_NAME
 
-    def _to_dynamodb_item(self, receipt: Receipt) -> Dict[str, Any]:
+    def _to_dynamodb_item(self, receipt: Receipt) -> dict[str, Any]:
         """Convert Receipt entity to DynamoDB item."""
         return {
             "receipt_id": receipt.receipt_id,
@@ -63,10 +63,11 @@ class DynamoDBReceiptRepository(ReceiptRepository):
             "version": receipt.version,
         }
 
-    def _from_dynamodb_item(self, item: Dict[str, Any]) -> Receipt:
+    def _from_dynamodb_item(self, item: dict[str, Any]) -> Receipt:
         """Convert DynamoDB item to Receipt entity."""
-        from domain.entities.receipt import ReceiptItem
         from decimal import Decimal
+
+        from domain.entities.receipt import ReceiptItem
 
         # Convert items
         items = []
@@ -154,8 +155,8 @@ class DynamoDBReceiptRepository(ReceiptRepository):
         self,
         user_id: str,
         limit: Optional[int] = None,
-        last_evaluated_key: Optional[Dict[str, Any]] = None,
-    ) -> List[Receipt]:
+        last_evaluated_key: Optional[dict[str, Any]] = None,
+    ) -> list[Receipt]:
         """Find receipts by user ID."""
         try:
             # Use GSI to query by user_id
@@ -208,7 +209,7 @@ class DynamoDBReceiptRepository(ReceiptRepository):
 
             # Prepare update expression
             update_expression = """
-                SET 
+                SET
                     merchant_name = :merchant_name,
                     merchant_address = :merchant_address,
                     purchase_date = :purchase_date,
@@ -299,7 +300,7 @@ class DynamoDBReceiptRepository(ReceiptRepository):
 
     async def find_by_date_range(
         self, user_id: str, start_date: datetime, end_date: datetime
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Find receipts by date range."""
         try:
             # This would typically use a GSI with user_id as partition key
@@ -323,7 +324,7 @@ class DynamoDBReceiptRepository(ReceiptRepository):
             logger.error(f"Failed to find receipts by date range: {e}")
             raise DatabaseError(f"Failed to find receipts by date range: {e}")
 
-    async def find_by_merchant(self, user_id: str, merchant_name: str) -> List[Receipt]:
+    async def find_by_merchant(self, user_id: str, merchant_name: str) -> list[Receipt]:
         """Find receipts by merchant name."""
         try:
             receipts = await self.find_by_user_id(user_id)
@@ -362,7 +363,7 @@ class DynamoDBReceiptRepository(ReceiptRepository):
             logger.error(f"Failed to count receipts for user {user_id}: {e}")
             raise DatabaseError(f"Failed to count receipts: {e}")
 
-    async def batch_save(self, receipts: List[Receipt]) -> List[Receipt]:
+    async def batch_save(self, receipts: list[Receipt]) -> list[Receipt]:
         """Save multiple receipts in batch."""
         try:
             items = [self._to_dynamodb_item(receipt) for receipt in receipts]
@@ -392,11 +393,11 @@ class DynamoDBReceiptRepository(ReceiptRepository):
         user_id: str,
         limit: Optional[int] = None,
         last_evaluated_key: Optional[str] = None,
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get all receipts for a specific user - interface compatibility."""
         return await self.find_by_user_id(user_id, limit, last_evaluated_key)
 
-    async def bulk_delete(self, receipt_ids: List[str]) -> int:
+    async def bulk_delete(self, receipt_ids: list[str]) -> int:
         """Delete multiple receipts by their IDs. Returns count of deleted receipts."""
         # Placeholder implementation
         count = 0
@@ -407,14 +408,14 @@ class DynamoDBReceiptRepository(ReceiptRepository):
 
     async def get_inactive_receipts(
         self, days_threshold: int = 30, limit: Optional[int] = None
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get receipts from inactive free users older than threshold days."""
         # Placeholder implementation
         return []
 
     async def get_by_processing_status(
         self, status: str, limit: Optional[int] = None
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get receipts by processing status."""
         # Placeholder implementation
         return []

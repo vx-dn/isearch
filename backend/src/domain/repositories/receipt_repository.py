@@ -1,7 +1,8 @@
 """Receipt repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional
+
 from ..entities import Receipt
 
 
@@ -24,7 +25,7 @@ class ReceiptRepository(ABC):
         user_id: str,
         limit: Optional[int] = None,
         last_evaluated_key: Optional[str] = None,
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get all receipts for a specific user with pagination."""
         pass
 
@@ -39,21 +40,21 @@ class ReceiptRepository(ABC):
         pass
 
     @abstractmethod
-    async def bulk_delete(self, receipt_ids: List[str]) -> int:
+    async def bulk_delete(self, receipt_ids: list[str]) -> int:
         """Delete multiple receipts by their IDs. Returns count of deleted receipts."""
         pass
 
     @abstractmethod
     async def get_inactive_receipts(
         self, days_threshold: int = 30, limit: Optional[int] = None
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get receipts from inactive free users older than threshold days."""
         pass
 
     @abstractmethod
     async def get_by_processing_status(
         self, status: str, limit: Optional[int] = None
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         """Get receipts by processing status."""
         pass
 

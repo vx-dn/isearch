@@ -1,7 +1,8 @@
 """Search repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any
+from typing import Any, Optional
+
 from ..entities import Receipt
 
 
@@ -18,11 +19,11 @@ class SearchRepository(ABC):
         self,
         query: str,
         user_id: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Search for receipts.
 
@@ -45,7 +46,7 @@ class SearchRepository(ABC):
         pass
 
     @abstractmethod
-    async def bulk_delete(self, receipt_ids: List[str]) -> int:
+    async def bulk_delete(self, receipt_ids: list[str]) -> int:
         """Delete multiple receipt documents. Returns count of deleted documents."""
         pass
 
@@ -55,11 +56,11 @@ class SearchRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_search_suggestions(self, query: str, user_id: str) -> List[str]:
+    async def get_search_suggestions(self, query: str, user_id: str) -> list[str]:
         """Get search suggestions based on partial query."""
         pass
 
     @abstractmethod
-    async def rebuild_user_index(self, user_id: str, receipts: List[Receipt]) -> bool:
+    async def rebuild_user_index(self, user_id: str, receipts: list[Receipt]) -> bool:
         """Rebuild search index for a specific user."""
         pass

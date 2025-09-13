@@ -1,12 +1,12 @@
 """Lambda function handlers for the Receipt Search application."""
 
+import asyncio
 import json
 import logging
 import os
 import sys
-import asyncio
-from typing import Dict, Any, Optional
 from functools import lru_cache
+from typing import Any, Optional
 
 # Add src to path for imports
 sys.path.append("/opt/src")
@@ -16,25 +16,25 @@ import boto3
 
 # Import existing FastAPI services and DTOs
 try:
-    from src.application.services.user_service import UserService
+    from src.application.api.dto import (
+        ForgotPasswordRequest,
+        LoginRequest,
+        PaginationParams,
+        ReceiptCreateRequest,
+        ReceiptUpdateRequest,
+        ResetPasswordRequest,
+        SearchRequest,
+        UserCreateRequest,
+    )
     from src.application.services.receipt_service import ReceiptService
     from src.application.services.search_service import SearchService
-    from src.application.api.dto import (
-        UserCreateRequest,
-        LoginRequest,
-        ReceiptCreateRequest,
-        SearchRequest,
-        ForgotPasswordRequest,
-        ResetPasswordRequest,
-        ReceiptUpdateRequest,
-        PaginationParams,
-    )
+    from src.application.services.user_service import UserService
     from src.domain.exceptions import (
-        ValidationError,
-        UserNotFoundError,
-        ReceiptNotFoundError,
         AuthenticationError,
         AuthorizationError,
+        ReceiptNotFoundError,
+        UserNotFoundError,
+        ValidationError,
     )
 except ImportError as e:
     logging.warning(f"Could not import FastAPI services: {e}")
@@ -126,7 +126,7 @@ def run_async(coro):
     return loop.run_until_complete(coro)
 
 
-def api_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def api_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Main API handler for all HTTP requests.
     Routes requests to appropriate functions based on path and method.
@@ -192,7 +192,7 @@ def api_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return create_error_response(500, "Internal server error")
 
 
-def image_processor_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def image_processor_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Process uploaded receipt images using existing ReceiptService.
     Triggered by S3 uploads, extracts metadata and queues for text extraction.
@@ -252,7 +252,7 @@ def image_processor_handler(event: Dict[str, Any], context: Any) -> Dict[str, An
         raise
 
 
-def text_extractor_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def text_extractor_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Extract text from receipt images using existing ReceiptService + Textract.
     Triggered by SQS messages from image processor.
@@ -322,7 +322,7 @@ def text_extractor_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any
         raise
 
 
-def cleanup_worker_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def cleanup_worker_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     Clean up expired receipts and unused files using existing services.
     Triggered by CloudWatch Events (scheduled).
@@ -510,7 +510,7 @@ def index_in_meilisearch(receipt_id: str, text: str) -> None:
 
 
 # Helper functions
-def get_cors_headers() -> Dict[str, str]:
+def get_cors_headers() -> dict[str, str]:
     """Get CORS headers for API responses."""
     return {
         "Access-Control-Allow-Origin": "*",
@@ -522,7 +522,7 @@ def get_cors_headers() -> Dict[str, str]:
 
 def create_error_response(
     status_code: int, message: str, details: Optional[str] = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create standardized error response matching FastAPI format."""
     error_body = {"error": message}
     if details:
@@ -535,7 +535,7 @@ def create_error_response(
     }
 
 
-def create_success_response(data: Any, status_code: int = 200) -> Dict[str, Any]:
+def create_success_response(data: Any, status_code: int = 200) -> dict[str, Any]:
     """Create standardized success response matching FastAPI format."""
     # Handle Pydantic models
     if hasattr(data, "dict"):
@@ -552,7 +552,7 @@ def create_success_response(data: Any, status_code: int = 200) -> Dict[str, Any]
     }
 
 
-def extract_user_context(headers: Dict[str, str]) -> Optional[Dict[str, Any]]:
+def extract_user_context(headers: dict[str, str]) -> Optional[dict[str, Any]]:
     """Extract user context from headers (JWT/Cognito token)."""
     try:
         # Look for Authorization header
@@ -573,14 +573,14 @@ def extract_user_context(headers: Dict[str, str]) -> Optional[Dict[str, Any]]:
         return None
 
 
-def require_auth(user_context: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def require_auth(user_context: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
     """Check if user is authenticated, return error response if not."""
     if not user_context or not user_context.get("authenticated"):
         return create_error_response(401, "Authentication required")
     return None
 
 
-def handle_health_check(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def handle_health_check(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Handle health check endpoints."""
     path = event.get("path", "")
 
@@ -598,8 +598,8 @@ def handle_health_check(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 
 def handle_auth(
-    event: Dict[str, Any], context: Any, body: Dict[str, Any], path: str, method: str
-) -> Dict[str, Any]:
+    event: dict[str, Any], context: Any, body: dict[str, Any], path: str, method: str
+) -> dict[str, Any]:
     """Handle authentication endpoints using Cognito + UserService."""
     try:
         user_service = get_user_service()
@@ -637,7 +637,7 @@ def handle_auth(
         return create_error_response(500, "Authentication service error")
 
 
-def handle_user_registration(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
+def handle_user_registration(user_service, body: dict[str, Any]) -> dict[str, Any]:
     """Handle user registration."""
     try:
         # Validate request
@@ -660,7 +660,7 @@ def handle_user_registration(user_service, body: Dict[str, Any]) -> Dict[str, An
         raise
 
 
-def handle_user_login(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
+def handle_user_login(user_service, body: dict[str, Any]) -> dict[str, Any]:
     """Handle user login."""
     try:
         # Validate request
@@ -681,7 +681,7 @@ def handle_user_login(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
         return create_error_response(400, str(e))
 
 
-def handle_forgot_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
+def handle_forgot_password(user_service, body: dict[str, Any]) -> dict[str, Any]:
     """Handle forgot password request."""
     try:
         if not body.get("email"):
@@ -698,7 +698,7 @@ def handle_forgot_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]
         return create_error_response(400, str(e))
 
 
-def handle_reset_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
+def handle_reset_password(user_service, body: dict[str, Any]) -> dict[str, Any]:
     """Handle password reset."""
     try:
         required_fields = ["email", "reset_code", "new_password"]
@@ -717,7 +717,7 @@ def handle_reset_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
         return create_error_response(401, str(e))
 
 
-def handle_get_profile(user_service, user_context: Dict[str, Any]) -> Dict[str, Any]:
+def handle_get_profile(user_service, user_context: dict[str, Any]) -> dict[str, Any]:
     """Handle get user profile."""
     try:
         # Extract user ID from token (simplified for now)
@@ -736,15 +736,15 @@ def handle_get_profile(user_service, user_context: Dict[str, Any]) -> Dict[str, 
 
 
 def handle_receipts(
-    event: Dict[str, Any],
+    event: dict[str, Any],
     context: Any,
-    body: Dict[str, Any],
+    body: dict[str, Any],
     path: str,
     method: str,
-    query_params: Dict[str, Any],
-    path_params: Dict[str, Any],
-    user_context: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
+    query_params: dict[str, Any],
+    path_params: dict[str, Any],
+    user_context: Optional[dict[str, Any]],
+) -> dict[str, Any]:
     """Handle receipt management endpoints using ReceiptService."""
     try:
         # Require authentication for all receipt endpoints
@@ -798,8 +798,8 @@ def handle_receipts(
 
 
 def handle_list_receipts(
-    receipt_service, query_params: Dict[str, Any], user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, query_params: dict[str, Any], user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle listing user receipts with pagination."""
     try:
         # Extract user ID (TODO: from JWT)
@@ -834,8 +834,8 @@ def handle_list_receipts(
 
 
 def handle_create_receipt(
-    receipt_service, body: Dict[str, Any], user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, body: dict[str, Any], user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle creating a new receipt."""
     try:
         # Extract user ID
@@ -854,8 +854,8 @@ def handle_create_receipt(
 
 
 def handle_get_receipt(
-    receipt_service, receipt_id: str, user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, receipt_id: str, user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle getting a specific receipt."""
     try:
         user_id = user_context.get("user_id", "default-user-id")
@@ -868,8 +868,8 @@ def handle_get_receipt(
 
 
 def handle_update_receipt(
-    receipt_service, receipt_id: str, body: Dict[str, Any], user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, receipt_id: str, body: dict[str, Any], user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle updating a receipt."""
     try:
         user_id = user_context.get("user_id", "default-user-id")
@@ -886,8 +886,8 @@ def handle_update_receipt(
 
 
 def handle_delete_receipt(
-    receipt_service, receipt_id: str, user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, receipt_id: str, user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle deleting a receipt."""
     try:
         user_id = user_context.get("user_id", "default-user-id")
@@ -900,8 +900,8 @@ def handle_delete_receipt(
 
 
 def handle_upload_request(
-    receipt_service, body: Dict[str, Any], user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, body: dict[str, Any], user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle receipt image upload request (presigned URL)."""
     try:
         user_id = user_context.get("user_id", "default-user-id")
@@ -922,8 +922,8 @@ def handle_upload_request(
 
 
 def handle_processing_status(
-    receipt_service, receipt_id: str, user_context: Dict[str, Any]
-) -> Dict[str, Any]:
+    receipt_service, receipt_id: str, user_context: dict[str, Any]
+) -> dict[str, Any]:
     """Handle getting receipt processing status."""
     try:
         user_id = user_context.get("user_id", "default-user-id")
@@ -936,14 +936,14 @@ def handle_processing_status(
 
 
 def handle_search(
-    event: Dict[str, Any],
+    event: dict[str, Any],
     context: Any,
-    body: Dict[str, Any],
+    body: dict[str, Any],
     path: str,
     method: str,
-    query_params: Dict[str, Any],
-    user_context: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
+    query_params: dict[str, Any],
+    user_context: Optional[dict[str, Any]],
+) -> dict[str, Any]:
     """Handle search endpoints using SearchService."""
     try:
         # Require authentication for search
@@ -980,8 +980,8 @@ def handle_search(
 
 
 def handle_search_receipts(
-    search_service, query_params: Dict[str, Any], user_id: str
-) -> Dict[str, Any]:
+    search_service, query_params: dict[str, Any], user_id: str
+) -> dict[str, Any]:
     """Handle basic receipt search."""
     try:
         query = query_params.get("q", "")
@@ -1028,8 +1028,8 @@ def handle_search_receipts(
 
 
 def handle_advanced_search(
-    search_service, body: Dict[str, Any], user_id: str
-) -> Dict[str, Any]:
+    search_service, body: dict[str, Any], user_id: str
+) -> dict[str, Any]:
     """Handle advanced search with complex filters."""
     try:
         # Add user_id to search request
@@ -1045,8 +1045,8 @@ def handle_advanced_search(
 
 
 def handle_search_suggestions(
-    search_service, query_params: Dict[str, Any], user_id: str
-) -> Dict[str, Any]:
+    search_service, query_params: dict[str, Any], user_id: str
+) -> dict[str, Any]:
     """Handle search suggestions/autocomplete."""
     try:
         query = query_params.get("q", "")
@@ -1066,7 +1066,7 @@ def handle_search_suggestions(
         return create_error_response(400, str(e))
 
 
-def handle_search_stats(search_service, user_id: str) -> Dict[str, Any]:
+def handle_search_stats(search_service, user_id: str) -> dict[str, Any]:
     """Handle getting user's search and spending statistics."""
     try:
         result = run_async(search_service.get_user_stats(user_id))

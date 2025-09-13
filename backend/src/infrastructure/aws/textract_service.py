@@ -1,9 +1,10 @@
 """AWS Textract service implementation."""
 
-import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Any
 import logging
+from typing import Any
+
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class TextractService:
         """Initialize Textract service."""
         self.textract_client = boto3.client("textract", region_name=region_name)
 
-    async def extract_text(self, bucket: str, key: str) -> Dict[str, Any]:
+    async def extract_text(self, bucket: str, key: str) -> dict[str, Any]:
         """Extract text from image using AWS Textract."""
         try:
             response = self.textract_client.detect_document_text(
@@ -27,7 +28,7 @@ class TextractService:
             logger.error(f"Failed to extract text from {bucket}/{key}: {e}")
             raise
 
-    def parse_receipt_data(self, textract_response: Dict[str, Any]) -> str:
+    def parse_receipt_data(self, textract_response: dict[str, Any]) -> str:
         """Parse raw Textract response to extract plain text."""
         try:
             blocks = textract_response.get("Blocks", [])
@@ -50,8 +51,8 @@ class TextractService:
             return "N/A"
 
     def extract_key_value_pairs(
-        self, textract_response: Dict[str, Any]
-    ) -> Dict[str, str]:
+        self, textract_response: dict[str, Any]
+    ) -> dict[str, str]:
         """Extract key-value pairs from Textract response (for forms)."""
         try:
             blocks = textract_response.get("Blocks", [])
@@ -87,8 +88,8 @@ class TextractService:
 
     def _get_text_from_relationships(
         self,
-        block: Dict[str, Any],
-        block_map: Dict[str, Dict[str, Any]],
+        block: dict[str, Any],
+        block_map: dict[str, dict[str, Any]],
         relationship_type: str,
     ) -> str:
         """Helper method to extract text from block relationships."""
@@ -122,7 +123,7 @@ class TextractService:
             logger.error(f"Failed to get text from relationships: {e}")
             return ""
 
-    def extract_tables(self, textract_response: Dict[str, Any]) -> List[List[str]]:
+    def extract_tables(self, textract_response: dict[str, Any]) -> list[list[str]]:
         """Extract tables from Textract response."""
         try:
             blocks = textract_response.get("Blocks", [])
@@ -144,8 +145,8 @@ class TextractService:
             return []
 
     def _extract_table_data(
-        self, table_block: Dict[str, Any], block_map: Dict[str, Dict[str, Any]]
-    ) -> List[List[str]]:
+        self, table_block: dict[str, Any], block_map: dict[str, dict[str, Any]]
+    ) -> list[list[str]]:
         """Extract data from a table block."""
         try:
             relationships = table_block.get("Relationships", [])
@@ -191,7 +192,7 @@ class TextractService:
             logger.error(f"Failed to extract table data: {e}")
             return []
 
-    async def analyze_expense(self, bucket: str, key: str) -> Dict[str, Any]:
+    async def analyze_expense(self, bucket: str, key: str) -> dict[str, Any]:
         """Analyze expense document using Textract Analyze Expense API."""
         try:
             response = self.textract_client.analyze_expense(
@@ -203,7 +204,7 @@ class TextractService:
             logger.error(f"Failed to analyze expense document {bucket}/{key}: {e}")
             raise
 
-    def parse_expense_data(self, expense_response: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_expense_data(self, expense_response: dict[str, Any]) -> dict[str, Any]:
         """Parse expense analysis response to extract structured data."""
         try:
             expense_documents = expense_response.get("ExpenseDocuments", [])

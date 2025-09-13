@@ -1,13 +1,13 @@
 """User use cases implementation."""
 
 import logging
-from typing import Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
 from src.domain.entities.user import User
+from src.domain.exceptions import UserNotFoundError, ValidationError
 from src.domain.repositories.user_repository import UserRepository
-from src.domain.exceptions import ValidationError, UserNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class CreateUserUseCase:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    async def execute(self, user_data: Dict[str, Any]) -> User:
+    async def execute(self, user_data: dict[str, Any]) -> User:
         """Execute create user use case."""
         try:
             # Generate user ID
@@ -76,7 +76,7 @@ class UpdateUserUseCase:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    async def execute(self, user_id: str, update_data: Dict[str, Any]) -> User:
+    async def execute(self, user_id: str, update_data: dict[str, Any]) -> User:
         """Execute update user use case."""
         try:
             # Get existing user

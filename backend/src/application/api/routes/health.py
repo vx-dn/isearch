@@ -1,7 +1,9 @@
 """Health check API routes."""
 
 from datetime import datetime
+
 from fastapi import APIRouter
+
 from src.application.api.dto import HealthCheckResponse
 from src.infrastructure.config import infrastructure_config
 

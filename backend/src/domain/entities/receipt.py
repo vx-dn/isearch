@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
 from decimal import Decimal
+from typing import Any, Optional
 
 
 @dataclass
@@ -15,7 +15,7 @@ class ReceiptItem:
     quantity: Optional[int] = None
     unit_price: Optional[Decimal] = None
     total_price: Optional[Decimal] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -33,16 +33,16 @@ class Receipt:
     receipt_type: Optional[str] = None
     raw_text: Optional[str] = None
     confidence_score: Optional[float] = None
-    extraction_metadata: Dict[str, Any] = field(default_factory=dict)
-    items: Optional[List[ReceiptItem]] = None
-    tags: Optional[List[str]] = None
+    extraction_metadata: dict[str, Any] = field(default_factory=dict)
+    items: Optional[list[ReceiptItem]] = None
+    tags: Optional[list[str]] = None
     notes: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = False
     version: int = 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert receipt to dictionary for serialization."""
         return {
             "receipt_id": self.receipt_id,
@@ -85,7 +85,7 @@ class Receipt:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Receipt":
+    def from_dict(cls, data: dict[str, Any]) -> "Receipt":
         """Create receipt from dictionary."""
         # Convert items
         items = []

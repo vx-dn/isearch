@@ -3,8 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.application.api.routes.health import router as health_router
 from src.application.api.routes.auth import router as auth_router
+from src.application.api.routes.health import router as health_router
 from src.application.api.routes.receipts import router as receipts_router
 from src.application.api.routes.search import router as search_router
 

@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 import pytest
+
 from main import app
 from src.application.auth.middleware import get_current_active_user
 from src.application.services.receipt_service import receipt_service

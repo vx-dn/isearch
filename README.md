@@ -69,7 +69,7 @@ This project uses separate requirements files for different environments:
 
 - **`requirements.txt`** - Runtime dependencies only (what the application imports)
 - **`requirements-dev.txt`** - Development dependencies (testing, linting, formatting)
-- **`requirements-prod.txt`** - Production optimizations (monitoring, WSGI servers)
+- **`backend/deploy/requirements-lambda.txt`** - Lambda-optimized production deployment
 
 **Benefits:**
 - ✅ Smaller Docker images in production

@@ -1,11 +1,12 @@
 """AWS S3 service implementation."""
 
-import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Any
-from PIL import Image
 import io
 import logging
+from typing import Any
+
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class S3Service:
         file_size: int,
         content_type: str = "image/jpeg",
         expiration: int = 3600,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate presigned URL for file upload."""
         try:
             # Define the policy for the presigned URL
@@ -180,7 +181,7 @@ class S3Service:
             )
             return False
 
-    async def delete_objects(self, bucket: str, keys: List[str]) -> int:
+    async def delete_objects(self, bucket: str, keys: list[str]) -> int:
         """Delete multiple objects from S3."""
         if not keys:
             return 0

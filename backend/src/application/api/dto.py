@@ -1,10 +1,11 @@
 """API Data Transfer Objects for requests and responses."""
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class SubscriptionTier(str, Enum):
@@ -44,7 +45,7 @@ class UserUpdateRequest(BaseModel):
 
     username: Optional[str] = None
     display_name: Optional[str] = None
-    preferences: Optional[Dict[str, Any]] = None
+    preferences: Optional[dict[str, Any]] = None
 
 
 class UserResponse(BaseModel):
@@ -124,7 +125,7 @@ class ReceiptItemRequest(BaseModel):
     quantity: Optional[int] = None
     unit_price: Optional[Decimal] = None
     total_price: Optional[Decimal] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class ReceiptItemResponse(BaseModel):
@@ -135,7 +136,7 @@ class ReceiptItemResponse(BaseModel):
     quantity: Optional[int] = None
     unit_price: Optional[Decimal] = None
     total_price: Optional[Decimal] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -149,8 +150,8 @@ class ReceiptCreateRequest(BaseModel):
     total_amount: Optional[Decimal] = None
     currency: Optional[str] = None
     receipt_type: Optional[ReceiptType] = None
-    items: Optional[List[ReceiptItemRequest]] = None
-    tags: Optional[List[str]] = None
+    items: Optional[list[ReceiptItemRequest]] = None
+    tags: Optional[list[str]] = None
     notes: Optional[str] = None
 
 
@@ -163,8 +164,8 @@ class ReceiptUpdateRequest(BaseModel):
     total_amount: Optional[Decimal] = None
     currency: Optional[str] = None
     receipt_type: Optional[ReceiptType] = None
-    items: Optional[List[ReceiptItemRequest]] = None
-    tags: Optional[List[str]] = None
+    items: Optional[list[ReceiptItemRequest]] = None
+    tags: Optional[list[str]] = None
     notes: Optional[str] = None
 
 
@@ -182,9 +183,9 @@ class ReceiptResponse(BaseModel):
     receipt_type: Optional[str] = None
     raw_text: Optional[str] = None
     confidence_score: Optional[float] = None
-    extraction_metadata: Optional[Dict[str, Any]] = None
-    items: Optional[List[ReceiptItemResponse]] = None
-    tags: Optional[List[str]] = None
+    extraction_metadata: Optional[dict[str, Any]] = None
+    items: Optional[list[ReceiptItemResponse]] = None
+    tags: Optional[list[str]] = None
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -196,7 +197,7 @@ class ReceiptResponse(BaseModel):
 class ReceiptListResponse(BaseModel):
     """Paginated receipt list response."""
 
-    receipts: List[ReceiptResponse]
+    receipts: list[ReceiptResponse]
     total_count: int
     page: int
     page_size: int
@@ -211,7 +212,7 @@ class ImageUploadResponse(BaseModel):
 
     image_id: str
     upload_url: str
-    fields: Dict[str, str]
+    fields: dict[str, str]
     expires_in: int
 
 
@@ -232,7 +233,7 @@ class SearchRequest(BaseModel):
     """Search request."""
 
     query: str
-    filters: Optional[Dict[str, Any]] = None
+    filters: Optional[dict[str, Any]] = None
     limit: int = Field(default=20, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
     sort_by: Optional[str] = None
@@ -242,7 +243,7 @@ class SearchRequest(BaseModel):
 class SearchResponse(BaseModel):
     """Search results response."""
 
-    hits: List[Dict[str, Any]]
+    hits: list[dict[str, Any]]
     total_hits: int
     processing_time_ms: int
     limit: int
@@ -271,7 +272,7 @@ class AmountRangeSearchRequest(BaseModel):
 class TagSearchRequest(BaseModel):
     """Tag search request."""
 
-    tags: List[str]
+    tags: list[str]
     limit: int = Field(default=20, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
 
@@ -285,9 +286,9 @@ class AnalyticsResponse(BaseModel):
     total_receipts: int
     total_amount: Decimal
     average_amount: Decimal
-    receipts_by_month: Dict[str, int]
-    spending_by_category: Dict[str, Decimal]
-    top_merchants: List[Dict[str, Any]]
+    receipts_by_month: dict[str, int]
+    spending_by_category: dict[str, Decimal]
+    top_merchants: list[dict[str, Any]]
 
 
 class MerchantStatsResponse(BaseModel):
@@ -317,7 +318,7 @@ class ErrorResponse(BaseModel):
 
     error: str
     message: str
-    details: Optional[List[ErrorDetail]] = None
+    details: Optional[list[ErrorDetail]] = None
     request_id: Optional[str] = None
 
 
@@ -329,7 +330,7 @@ class HealthCheckResponse(BaseModel):
 
     status: str  # "healthy", "unhealthy"
     timestamp: datetime
-    services: Dict[str, str]
+    services: dict[str, str]
     version: Optional[str] = None
 
 

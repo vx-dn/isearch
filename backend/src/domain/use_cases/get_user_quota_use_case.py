@@ -1,8 +1,8 @@
 """Get user quota use case implementation."""
 
-from ..repositories import UserRepository
 from ..dtos import UserQuotaResponse
 from ..exceptions import ResourceNotFoundError
+from ..repositories import UserRepository
 
 
 class GetUserQuotaUseCase:

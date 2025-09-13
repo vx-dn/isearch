@@ -1,16 +1,15 @@
 """Infrastructure configuration and service factory."""
 
-import os
 import logging
+import os
 from typing import Optional
 
+from src.domain.config import DOMAIN_CONFIG
+from src.infrastructure.auth.cognito_service import CognitoService
 from src.infrastructure.aws.dynamodb_service import DynamoDBService
 from src.infrastructure.aws.s3_service import S3Service
-from src.infrastructure.aws.textract_service import TextractService
 from src.infrastructure.aws.sqs_service import SQSService
-from src.infrastructure.auth.cognito_service import CognitoService
-from src.infrastructure.search.meilisearch_service import MeilisearchService
-
+from src.infrastructure.aws.textract_service import TextractService
 from src.infrastructure.repositories.dynamodb_receipt_repository import (
     DynamoDBReceiptRepository,
 )
@@ -20,8 +19,7 @@ from src.infrastructure.repositories.dynamodb_user_repository import (
 from src.infrastructure.repositories.meilisearch_search_repository import (
     MeilisearchSearchRepository,
 )
-
-from src.domain.config import DOMAIN_CONFIG
+from src.infrastructure.search.meilisearch_service import MeilisearchService
 
 logger = logging.getLogger(__name__)
 

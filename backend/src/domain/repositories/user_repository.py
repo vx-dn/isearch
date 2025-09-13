@@ -1,7 +1,8 @@
 """User repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional
+
 from ..entities import User
 
 
@@ -34,7 +35,7 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_inactive_free_users(self, days_threshold: int = 30) -> List[User]:
+    async def get_inactive_free_users(self, days_threshold: int = 30) -> list[User]:
         """Get free users who have been inactive for more than the threshold days."""
         pass
 

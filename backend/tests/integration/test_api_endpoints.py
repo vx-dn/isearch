@@ -1,10 +1,11 @@
 """Integration tests for API endpoints - Fixed version."""
 
-import pytest
-from unittest.mock import patch
 from datetime import datetime, timezone
+from unittest.mock import patch
 
+import pytest
 from fastapi import status
+
 from src.application.api.dto import UserResponse
 
 

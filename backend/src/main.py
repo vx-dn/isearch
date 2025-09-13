@@ -3,27 +3,28 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException, status
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-import uvicorn
 
+from application.api.dto import ErrorDetail, ErrorResponse
 from application.api.routes import (
     auth_router,
+    health_router,
     receipt_router,
     search_router,
-    health_router,
 )
-from application.api.dto import ErrorResponse, ErrorDetail
-from infrastructure.config import infrastructure_config
 from domain.exceptions import (
     DomainError,
-    ValidationError,
-    UserNotFoundError,
     ReceiptNotFoundError,
     SearchError,
+    UserNotFoundError,
+    ValidationError,
 )
+from infrastructure.config import infrastructure_config
 
 # Configure logging
 logging.basicConfig(

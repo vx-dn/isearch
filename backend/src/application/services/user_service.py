@@ -1,28 +1,28 @@
 """User service for application layer."""
 
 import logging
-from typing import Dict, Any
+from typing import Any
 
-from src.domain.entities.user import User
-from src.domain.use_cases.user_use_cases import (
-    CreateUserUseCase,
-    GetUserUseCase,
-    UpdateUserUseCase,
-    DeleteUserUseCase,
-)
 from src.application.api.dto import (
-    UserCreateRequest,
-    UserUpdateRequest,
-    UserResponse,
-    LoginRequest,
-    LoginResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    LoginRequest,
+    LoginResponse,
     ResetPasswordRequest,
+    UserCreateRequest,
+    UserResponse,
+    UserUpdateRequest,
 )
 from src.application.auth.middleware import auth_middleware
-from src.infrastructure.config import infrastructure_config
+from src.domain.entities.user import User
 from src.domain.exceptions import UserNotFoundError, ValidationError
+from src.domain.use_cases.user_use_cases import (
+    CreateUserUseCase,
+    DeleteUserUseCase,
+    GetUserUseCase,
+    UpdateUserUseCase,
+)
+from src.infrastructure.config import infrastructure_config
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +325,7 @@ class UserService:
             logger.error(f"Failed to delete user account: {e}")
             raise ValidationError(f"Account deletion failed: {e}")
 
-    async def get_user_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_user_stats(self, user_id: str) -> dict[str, Any]:
         """Get user statistics."""
         try:
             user = await self.get_user_use_case.execute(user_id)

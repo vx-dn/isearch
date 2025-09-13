@@ -1,11 +1,12 @@
 """End-to-end tests for complete user workflows."""
 
-import pytest
-from unittest.mock import patch, AsyncMock
 import uuid
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi import status
+
 from main import app
 from src.application.auth.middleware import get_current_active_user
 
@@ -76,8 +77,8 @@ class TestUserRegistrationAndLogin:
             assert token_data["token_type"] == "bearer"
 
             # Step 3: Access protected profile endpoint
-            from src.domain.entities.user import User
             from src.domain.entities.enums import UserRole
+            from src.domain.entities.user import User
 
             mock_user = User(
                 user_id=user_id,
@@ -184,7 +185,8 @@ class TestReceiptWorkflow:
 
                 mock_receipt_service.create_receipt.return_value = created_receipt
 
-                receipt_create_data = {"image_id": image_id, **fake_receipt_data}
+                # Don't include image_id in the receipt creation request as it's not part of ReceiptCreateRequest
+                receipt_create_data = fake_receipt_data
 
                 create_response = await async_client.post(
                     "/api/v1/receipts/", json=receipt_create_data, headers=auth_headers

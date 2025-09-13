@@ -1,10 +1,11 @@
 """AWS SQS service implementation."""
 
-import boto3
-from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Optional, Any
 import json
 import logging
+from typing import Any, Optional
+
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class SQSService:
     async def send_message(
         self,
         queue_url: str,
-        message: Dict[str, Any],
+        message: dict[str, Any],
         delay_seconds: int = 0,
         message_group_id: Optional[str] = None,
         message_deduplication_id: Optional[str] = None,
@@ -48,7 +49,7 @@ class SQSService:
             return False
 
     async def send_batch_messages(
-        self, queue_url: str, messages: List[Dict[str, Any]]
+        self, queue_url: str, messages: list[dict[str, Any]]
     ) -> int:
         """Send batch of messages to SQS queue."""
         try:
@@ -94,7 +95,7 @@ class SQSService:
         max_messages: int = 1,
         wait_time_seconds: int = 0,
         visibility_timeout_seconds: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Receive messages from SQS queue."""
         try:
             kwargs = {
@@ -156,7 +157,7 @@ class SQSService:
             return False
 
     async def delete_batch_messages(
-        self, queue_url: str, receipt_handles: List[str]
+        self, queue_url: str, receipt_handles: list[str]
     ) -> int:
         """Delete batch of messages from SQS queue."""
         try:
@@ -192,7 +193,7 @@ class SQSService:
             logger.error(f"Failed to delete batch messages from queue {queue_url}: {e}")
             return 0
 
-    async def get_queue_attributes(self, queue_url: str) -> Dict[str, Any]:
+    async def get_queue_attributes(self, queue_url: str) -> dict[str, Any]:
         """Get queue attributes."""
         try:
             response = self.sqs_client.get_queue_attributes(

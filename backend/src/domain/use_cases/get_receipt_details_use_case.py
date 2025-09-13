@@ -1,9 +1,10 @@
 """Get receipt details use case implementation."""
 
 from typing import Protocol
-from ..repositories import ReceiptRepository, UserRepository
+
 from ..dtos import ReceiptDetailsResponse
 from ..exceptions import ResourceNotFoundError, UnauthorizedAccessError
+from ..repositories import ReceiptRepository, UserRepository
 
 
 class S3Service(Protocol):

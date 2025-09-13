@@ -1,15 +1,16 @@
 """Cleanup inactive receipts use case implementation."""
 
-from typing import List, Protocol
-from ..repositories import ReceiptRepository, UserRepository, SearchRepository
-from ..exceptions import RepositoryError
+from typing import Protocol
+
 from ..config import DOMAIN_CONFIG
+from ..exceptions import RepositoryError
+from ..repositories import ReceiptRepository, SearchRepository, UserRepository
 
 
 class S3Service(Protocol):
     """Protocol for S3 service operations."""
 
-    async def delete_objects(self, bucket: str, keys: List[str]) -> int:
+    async def delete_objects(self, bucket: str, keys: list[str]) -> int:
         """Delete multiple objects from S3."""
         ...
 

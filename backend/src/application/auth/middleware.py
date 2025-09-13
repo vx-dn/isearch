@@ -1,11 +1,12 @@
 """Authentication middleware and utilities."""
 
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Optional
+
 import jwt
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.domain.entities.user import User
 from src.infrastructure.config import infrastructure_config
@@ -43,7 +44,7 @@ class AuthMiddleware:
         if self.user_repository is None:
             self.user_repository = infrastructure_config.get_user_repository()
 
-    async def decode_token(self, token: str) -> Dict[str, Any]:
+    async def decode_token(self, token: str) -> dict[str, Any]:
         """Decode and validate JWT token."""
         try:
             # For development, we'll use simple JWT
@@ -55,7 +56,7 @@ class AuthMiddleware:
         except jwt.InvalidTokenError:
             raise AuthenticationError("Invalid token")
 
-    async def validate_cognito_token(self, token: str) -> Dict[str, Any]:
+    async def validate_cognito_token(self, token: str) -> dict[str, Any]:
         """Validate Cognito JWT token."""
         self._get_services()
 

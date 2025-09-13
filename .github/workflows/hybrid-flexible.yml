@@ -77,15 +77,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: 🎨 Code formatting
+      - name: 🔍 Linting & Formatting Check
         if: steps.changes.outputs.backend == 'true'
         working-directory: ./backend
-        run: black --check --diff .
-
-      - name: 🔍 Linting
-        if: steps.changes.outputs.backend == 'true'
-        working-directory: ./backend
-        run: flake8 --max-line-length=88 --extend-ignore=E203,W503 .
+        run: |
+          # Ruff handles both linting and formatting
+          ruff check .
+          ruff format --check .
 
       - name: 🛡️ Security scan
         if: steps.changes.outputs.backend == 'true'

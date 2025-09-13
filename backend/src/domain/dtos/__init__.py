@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Optional
+
 from ..entities import ProcessingStatus, UserRole
 
 
@@ -11,16 +12,16 @@ class UploadReceiptRequest:
     """DTO for receipt upload request."""
 
     user_id: str
-    file_names: List[str]
-    file_sizes: List[int]
+    file_names: list[str]
+    file_sizes: list[int]
 
 
 @dataclass
 class UploadReceiptResponse:
     """DTO for receipt upload response."""
 
-    receipt_ids: List[str]
-    presigned_urls: List[Dict[str, str]]  # {"upload_url": "...", "fields": {...}}
+    receipt_ids: list[str]
+    presigned_urls: list[dict[str, str]]  # {"upload_url": "...", "fields": {...}}
     quota_remaining: int
 
 
@@ -63,7 +64,7 @@ class ReceiptSearchResult:
 class ReceiptSearchResponse:
     """DTO for receipt search response."""
 
-    results: List[ReceiptSearchResult]
+    results: list[ReceiptSearchResult]
     total_count: int
     query_time_ms: int
     has_more: bool
@@ -79,8 +80,8 @@ class ReceiptDetailsResponse:
     upload_date: datetime
     processing_status: ProcessingStatus
     extracted_text: str
-    structured_data: Dict[str, Any]
-    user_edits: Dict[str, Any]
+    structured_data: dict[str, Any]
+    user_edits: dict[str, Any]
     original_image_url: str
     thumbnail_url: str
 
@@ -113,7 +114,7 @@ class ProcessReceiptResponse:
     receipt_id: str
     success: bool
     extracted_text: str
-    structured_data: Dict[str, Any]
+    structured_data: dict[str, Any]
     error_message: Optional[str] = None
 
 
@@ -122,7 +123,7 @@ class DeleteReceiptsRequest:
     """DTO for bulk delete receipts request."""
 
     user_id: str
-    receipt_ids: List[str]
+    receipt_ids: list[str]
 
 
 @dataclass
@@ -130,5 +131,5 @@ class DeleteReceiptsResponse:
     """DTO for bulk delete receipts response."""
 
     deleted_count: int
-    failed_ids: List[str]
+    failed_ids: list[str]
     quota_restored: int

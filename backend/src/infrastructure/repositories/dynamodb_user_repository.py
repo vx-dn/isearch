@@ -1,14 +1,14 @@
 """DynamoDB implementation of user repository."""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+from typing import Any, Optional
 
+from src.domain.config import DOMAIN_CONFIG
 from src.domain.entities.user import User
+from src.domain.exceptions import DatabaseError
 from src.domain.repositories.user_repository import UserRepository
 from src.infrastructure.aws.dynamodb_service import DynamoDBService
-from src.domain.exceptions import DatabaseError
-from src.domain.config import DOMAIN_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class DynamoDBUserRepository(UserRepository):
         self.dynamodb_service = dynamodb_service
         self.table_name = DOMAIN_CONFIG.USER_TABLE_NAME
 
-    def _to_dynamodb_item(self, user: User) -> Dict[str, Any]:
+    def _to_dynamodb_item(self, user: User) -> dict[str, Any]:
         """Convert User entity to DynamoDB item."""
         return {
             "user_id": user.user_id,
@@ -40,7 +40,7 @@ class DynamoDBUserRepository(UserRepository):
             "version": user.version,
         }
 
-    def _from_dynamodb_item(self, item: Dict[str, Any]) -> User:
+    def _from_dynamodb_item(self, item: dict[str, Any]) -> User:
         """Convert DynamoDB item to User entity."""
         return User(
             user_id=item["user_id"],
@@ -162,7 +162,7 @@ class DynamoDBUserRepository(UserRepository):
 
             # Prepare update expression
             update_expression = """
-                SET 
+                SET
                     email = :email,
                     username = :username,
                     display_name = :display_name,
@@ -327,7 +327,7 @@ class DynamoDBUserRepository(UserRepository):
             raise DatabaseError(f"Failed to update storage used: {e}")
 
     async def update_preferences(
-        self, user_id: str, preferences: Dict[str, Any]
+        self, user_id: str, preferences: dict[str, Any]
     ) -> bool:
         """Update user preferences."""
         try:
@@ -372,8 +372,8 @@ class DynamoDBUserRepository(UserRepository):
     async def list_users(
         self,
         limit: Optional[int] = None,
-        last_evaluated_key: Optional[Dict[str, Any]] = None,
-    ) -> List[User]:
+        last_evaluated_key: Optional[dict[str, Any]] = None,
+    ) -> list[User]:
         """List users (admin function)."""
         try:
             items = await self.dynamodb_service.scan_items(
@@ -405,7 +405,7 @@ class DynamoDBUserRepository(UserRepository):
         """Update the user's last active timestamp to now - interface compatibility."""
         return await self.update_last_login(user_id)
 
-    async def get_inactive_free_users(self, days_threshold: int = 30) -> List[User]:
+    async def get_inactive_free_users(self, days_threshold: int = 30) -> list[User]:
         """Get free users who have been inactive for more than the threshold days."""
         # This is a placeholder implementation
         # In a real application, you would query based on last_active_date and subscription_tier

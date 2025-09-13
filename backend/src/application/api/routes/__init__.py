@@ -1,7 +1,7 @@
 """API routes module initialization."""
 
-from .health import router as health_router
 from .auth import router as auth_router
+from .health import router as health_router
 from .receipts import router as receipt_router
 from .search import router as search_router
 

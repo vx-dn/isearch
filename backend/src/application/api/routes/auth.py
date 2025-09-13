@@ -1,17 +1,18 @@
 """Authentication API routes."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
+
 from src.application.api.dto import (
-    UserCreateRequest,
-    UserResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
-    ForgotPasswordRequest,
     ResetPasswordRequest,
     SuccessResponse,
+    UserCreateRequest,
+    UserResponse,
 )
-from src.application.services.user_service import user_service
 from src.application.auth.middleware import get_current_active_user
+from src.application.services.user_service import user_service
 from src.domain.entities.user import User
 from src.domain.exceptions import ValidationError
 

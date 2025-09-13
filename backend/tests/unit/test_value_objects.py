@@ -1,10 +1,11 @@
 """Unit tests for domain value objects."""
 
-import pytest
-from decimal import Decimal
 import uuid
+from decimal import Decimal
 
-from src.domain.value_objects import UserId, ReceiptId, Money
+import pytest
+
+from src.domain.value_objects import Money, ReceiptId, UserId
 
 
 class TestUserId:

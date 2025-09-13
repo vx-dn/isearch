@@ -1,17 +1,17 @@
 """Search service for application layer."""
 
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 from src.application.api.dto import (
+    AmountRangeSearchRequest,
+    DateRangeSearchRequest,
     SearchRequest,
     SearchResponse,
-    DateRangeSearchRequest,
-    AmountRangeSearchRequest,
     TagSearchRequest,
 )
+from src.domain.exceptions import SearchError, ValidationError
 from src.infrastructure.config import infrastructure_config
-from src.domain.exceptions import ValidationError, SearchError
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class SearchService:
 
     async def get_suggestions(
         self, user_id: str, query: str, limit: int = 5
-    ) -> List[str]:
+    ) -> list[str]:
         """Get search suggestions based on partial query."""
         try:
             search_repo = self._get_search_repository()
@@ -240,14 +240,16 @@ class SearchService:
 
     async def get_popular_merchants(
         self, user_id: str, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get popular merchants for user."""
         try:
             search_repo = self._get_search_repository()
 
             # Get all receipts and aggregate by merchant
             result = await search_repo.search_receipts(
-                user_id=user_id, query="", limit=1000  # Large limit to get all receipts
+                user_id=user_id,
+                query="",
+                limit=1000,  # Large limit to get all receipts
             )
 
             merchant_stats = {}
@@ -278,14 +280,16 @@ class SearchService:
 
     async def get_popular_tags(
         self, user_id: str, limit: int = 20
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get popular tags for user."""
         try:
             search_repo = self._get_search_repository()
 
             # Get all receipts and aggregate by tags
             result = await search_repo.search_receipts(
-                user_id=user_id, query="", limit=1000  # Large limit to get all receipts
+                user_id=user_id,
+                query="",
+                limit=1000,  # Large limit to get all receipts
             )
 
             tag_stats = {}

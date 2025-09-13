@@ -1,30 +1,30 @@
 """Test configuration and fixtures."""
 
-import pytest
-import pytest_asyncio
-from typing import Generator, AsyncGenerator
-from unittest.mock import Mock, AsyncMock
-from datetime import datetime, timezone
-from decimal import Decimal
-import uuid
 import os
 import sys
+import uuid
+from collections.abc import AsyncGenerator, Generator
+from datetime import datetime, timezone
+from decimal import Decimal
+from unittest.mock import AsyncMock, Mock
+
+import httpx
+import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-import httpx
 
 # Add the backend directory to the Python path to allow imports
 backend_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, backend_dir)
 
 from main import app  # noqa: E402
-from src.domain.entities.user import User  # noqa: E402
-from src.domain.entities.receipt import Receipt, ReceiptItem  # noqa: E402
-from src.infrastructure.config import InfrastructureConfig  # noqa: E402
-from src.application.services.user_service import UserService  # noqa: E402
 from src.application.services.receipt_service import ReceiptService  # noqa: E402
 from src.application.services.search_service import SearchService  # noqa: E402
-
+from src.application.services.user_service import UserService  # noqa: E402
+from src.domain.entities.receipt import Receipt, ReceiptItem  # noqa: E402
+from src.domain.entities.user import User  # noqa: E402
+from src.infrastructure.config import InfrastructureConfig  # noqa: E402
 
 # Remove the custom event_loop fixture as it's deprecated
 # pytest-asyncio will provide the default one
@@ -171,8 +171,9 @@ def mock_search_service():
 @pytest.fixture
 def valid_jwt_token():
     """Generate a valid JWT token for testing."""
-    import jwt
     from datetime import datetime, timedelta
+
+    import jwt
 
     payload = {
         "sub": str(uuid.uuid4()),
@@ -219,7 +220,7 @@ def fake_receipt_data():
         ),
         "currency": fake.random_element(elements=("USD", "EUR", "GBP")),
         "receipt_type": fake.random_element(
-            elements=("food", "retail", "gas", "other")
+            elements=("grocery", "restaurant", "gas", "retail", "medical", "business", "other")
         ),
         "notes": fake.sentence(),
     }

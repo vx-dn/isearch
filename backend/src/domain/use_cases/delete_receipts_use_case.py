@@ -1,15 +1,16 @@
 """Delete receipts use case implementation."""
 
-from typing import List, Protocol
-from ..repositories import ReceiptRepository, UserRepository, SearchRepository
+from typing import Protocol
+
 from ..dtos import DeleteReceiptsRequest, DeleteReceiptsResponse
 from ..exceptions import ResourceNotFoundError
+from ..repositories import ReceiptRepository, SearchRepository, UserRepository
 
 
 class S3Service(Protocol):
     """Protocol for S3 service operations."""
 
-    async def delete_objects(self, bucket: str, keys: List[str]) -> int:
+    async def delete_objects(self, bucket: str, keys: list[str]) -> int:
         """Delete multiple objects from S3."""
         ...
 

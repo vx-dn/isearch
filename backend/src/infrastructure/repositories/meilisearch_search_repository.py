@@ -1,13 +1,13 @@
 """Meilisearch implementation of search repository."""
 
-from typing import List, Optional, Dict, Any
 import logging
+from typing import Any, Optional
 
+from src.domain.config import DOMAIN_CONFIG
 from src.domain.entities.receipt import Receipt
+from src.domain.exceptions import SearchError
 from src.domain.repositories.search_repository import SearchRepository
 from src.infrastructure.search.meilisearch_service import MeilisearchService
-from src.domain.exceptions import SearchError
-from src.domain.config import DOMAIN_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class MeilisearchSearchRepository(SearchRepository):
         self.meilisearch_service = meilisearch_service
         self.index_name = DOMAIN_CONFIG.SEARCH_INDEX_NAME
 
-    def _to_search_document(self, receipt: Receipt) -> Dict[str, Any]:
+    def _to_search_document(self, receipt: Receipt) -> dict[str, Any]:
         """Convert Receipt entity to search document."""
         # Create searchable text content
         searchable_text = []
@@ -115,7 +115,7 @@ class MeilisearchSearchRepository(SearchRepository):
             logger.error(f"Failed to index receipt {receipt.receipt_id}: {e}")
             raise SearchError(f"Failed to index receipt: {e}")
 
-    async def index_receipts(self, receipts: List[Receipt]) -> int:
+    async def index_receipts(self, receipts: list[Receipt]) -> int:
         """Index multiple receipts for search."""
         try:
             # Filter out deleted receipts and convert to documents
@@ -140,12 +140,12 @@ class MeilisearchSearchRepository(SearchRepository):
         self,
         user_id: str,
         query: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: Optional[str] = None,
         sort_order: str = "desc",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search receipts."""
         try:
             # Add user filter to ensure users only see their receipts
@@ -193,7 +193,7 @@ class MeilisearchSearchRepository(SearchRepository):
 
     async def search_by_merchant(
         self, user_id: str, merchant_name: str, limit: int = 20, offset: int = 0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search receipts by merchant name."""
         try:
             filters = {"user_id": user_id, "merchant_name": merchant_name}
@@ -224,7 +224,7 @@ class MeilisearchSearchRepository(SearchRepository):
         end_timestamp: int,
         limit: int = 20,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search receipts by date range."""
         try:
             filters = {
@@ -261,7 +261,7 @@ class MeilisearchSearchRepository(SearchRepository):
         max_amount: float,
         limit: int = 20,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search receipts by amount range."""
         try:
             filters = {
@@ -289,8 +289,8 @@ class MeilisearchSearchRepository(SearchRepository):
             raise SearchError(f"Failed to search by amount range: {e}")
 
     async def search_by_tags(
-        self, user_id: str, tags: List[str], limit: int = 20, offset: int = 0
-    ) -> Dict[str, Any]:
+        self, user_id: str, tags: list[str], limit: int = 20, offset: int = 0
+    ) -> dict[str, Any]:
         """Search receipts by tags."""
         try:
             # Create filter for tags (documents that contain any of the specified tags)
@@ -334,7 +334,7 @@ class MeilisearchSearchRepository(SearchRepository):
             logger.error(f"Failed to remove receipt {receipt_id} from search: {e}")
             raise SearchError(f"Failed to remove receipt from search: {e}")
 
-    async def remove_receipts(self, receipt_ids: List[str]) -> int:
+    async def remove_receipts(self, receipt_ids: list[str]) -> int:
         """Remove multiple receipts from search index."""
         try:
             if not receipt_ids:
@@ -372,7 +372,7 @@ class MeilisearchSearchRepository(SearchRepository):
             logger.error(f"Failed to clear receipts for user {user_id}: {e}")
             raise SearchError(f"Failed to clear user receipts: {e}")
 
-    async def get_search_stats(self) -> Dict[str, Any]:
+    async def get_search_stats(self) -> dict[str, Any]:
         """Get search index statistics."""
         try:
             stats = await self.meilisearch_service.get_index_stats()
@@ -381,7 +381,7 @@ class MeilisearchSearchRepository(SearchRepository):
             logger.error(f"Failed to get search stats: {e}")
             raise SearchError(f"Failed to get search stats: {e}")
 
-    async def update_search_settings(self, settings: Dict[str, Any]) -> bool:
+    async def update_search_settings(self, settings: dict[str, Any]) -> bool:
         """Update search index settings."""
         try:
             success = await self.meilisearch_service.update_settings(settings)

@@ -1,16 +1,18 @@
 """Search API routes."""
 
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from src.application.api.dto import (
+    AmountRangeSearchRequest,
+    DateRangeSearchRequest,
     SearchRequest,
     SearchResponse,
-    DateRangeSearchRequest,
-    AmountRangeSearchRequest,
     TagSearchRequest,
 )
-from src.application.services.search_service import search_service
 from src.application.auth.middleware import get_current_active_user
+from src.application.services.search_service import search_service
 from src.domain.entities.user import User
 from src.domain.exceptions import ValidationError
 
@@ -88,7 +90,7 @@ async def search_by_tags(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/suggestions", response_model=List[str])
+@router.get("/suggestions", response_model=list[str])
 async def get_suggestions(
     query: str = Query(..., min_length=1),
     limit: int = Query(5, ge=1, le=20),
@@ -104,7 +106,7 @@ async def get_suggestions(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/popular-merchants", response_model=List[Dict[str, Any]])
+@router.get("/popular-merchants", response_model=list[dict[str, Any]])
 async def get_popular_merchants(
     limit: int = Query(10, ge=1, le=50),
     current_user: User = Depends(get_current_active_user),
@@ -119,7 +121,7 @@ async def get_popular_merchants(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/popular-tags", response_model=List[Dict[str, Any]])
+@router.get("/popular-tags", response_model=list[dict[str, Any]])
 async def get_popular_tags(
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),

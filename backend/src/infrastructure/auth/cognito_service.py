@@ -1,12 +1,13 @@
 """AWS Cognito service implementation."""
 
-import boto3
-import logging
-from typing import Dict, Optional, Any
-from botocore.exceptions import ClientError
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
+import logging
+from typing import Any, Optional
+
+import boto3
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +45,8 @@ class CognitoService:
         username: str,
         password: str,
         email: str,
-        attributes: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        attributes: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
         """Sign up a new user."""
         try:
             user_attributes = [{"Name": "email", "Value": email}]
@@ -94,7 +95,7 @@ class CognitoService:
 
     async def confirm_sign_up(
         self, username: str, confirmation_code: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Confirm user sign up with verification code."""
         try:
             params = {
@@ -129,7 +130,7 @@ class CognitoService:
                 "error_message": str(e),
             }
 
-    async def initiate_auth(self, username: str, password: str) -> Dict[str, Any]:
+    async def initiate_auth(self, username: str, password: str) -> dict[str, Any]:
         """Initiate authentication for a user."""
         try:
             params = {
@@ -198,7 +199,7 @@ class CognitoService:
                 "error_message": str(e),
             }
 
-    async def refresh_token(self, refresh_token: str, username: str) -> Dict[str, Any]:
+    async def refresh_token(self, refresh_token: str, username: str) -> dict[str, Any]:
         """Refresh access token using refresh token."""
         try:
             params = {
@@ -246,7 +247,7 @@ class CognitoService:
                 "error_message": str(e),
             }
 
-    async def get_user(self, access_token: str) -> Dict[str, Any]:
+    async def get_user(self, access_token: str) -> dict[str, Any]:
         """Get user information using access token."""
         try:
             response = self.client.get_user(AccessToken=access_token)
@@ -281,8 +282,8 @@ class CognitoService:
             }
 
     async def update_user_attributes(
-        self, access_token: str, attributes: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, access_token: str, attributes: dict[str, str]
+    ) -> dict[str, Any]:
         """Update user attributes."""
         try:
             user_attributes = [
@@ -319,7 +320,7 @@ class CognitoService:
 
     async def change_password(
         self, access_token: str, previous_password: str, proposed_password: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Change user password."""
         try:
             self.client.change_password(
@@ -347,7 +348,7 @@ class CognitoService:
                 "error_message": str(e),
             }
 
-    async def forgot_password(self, username: str) -> Dict[str, Any]:
+    async def forgot_password(self, username: str) -> dict[str, Any]:
         """Initiate forgot password flow."""
         try:
             params = {"ClientId": self.client_id, "Username": username}
@@ -384,7 +385,7 @@ class CognitoService:
 
     async def confirm_forgot_password(
         self, username: str, confirmation_code: str, new_password: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Confirm forgot password with new password."""
         try:
             params = {
@@ -421,7 +422,7 @@ class CognitoService:
                 "error_message": str(e),
             }
 
-    async def global_sign_out(self, access_token: str) -> Dict[str, Any]:
+    async def global_sign_out(self, access_token: str) -> dict[str, Any]:
         """Sign out user from all devices."""
         try:
             self.client.global_sign_out(AccessToken=access_token)

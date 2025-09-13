@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Optional
+
 from .enums import UserRole
 
 
@@ -17,7 +18,7 @@ class User:
     image_quota: int
     last_active_date: Optional[datetime] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert user to dictionary for serialization."""
         return {
             "user_id": self.user_id,
@@ -31,7 +32,7 @@ class User:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "User":
+    def from_dict(cls, data: dict[str, Any]) -> "User":
         """Create user from dictionary."""
         role = UserRole(data["role"])
         return cls(

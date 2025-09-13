@@ -1,11 +1,12 @@
 """Process receipt use case implementation."""
 
-from typing import Protocol, Dict, Any
-from ..entities import ProcessingStatus
-from ..repositories import ReceiptRepository, SearchRepository
-from ..dtos import ProcessReceiptRequest, ProcessReceiptResponse
-from ..exceptions import ResourceNotFoundError
+from typing import Any, Protocol
+
 from ..config import DOMAIN_CONFIG
+from ..dtos import ProcessReceiptRequest, ProcessReceiptResponse
+from ..entities import ProcessingStatus
+from ..exceptions import ResourceNotFoundError
+from ..repositories import ReceiptRepository, SearchRepository
 
 
 class S3Service(Protocol):
@@ -27,11 +28,11 @@ class S3Service(Protocol):
 class TextractService(Protocol):
     """Protocol for Textract service operations."""
 
-    async def extract_text(self, bucket: str, key: str) -> Dict[str, Any]:
+    async def extract_text(self, bucket: str, key: str) -> dict[str, Any]:
         """Extract text from image using AWS Textract."""
         ...
 
-    def parse_receipt_data(self, textract_response: Dict[str, Any]) -> str:
+    def parse_receipt_data(self, textract_response: dict[str, Any]) -> str:
         """Parse raw Textract response to extract plain text."""
         ...
 
@@ -39,7 +40,7 @@ class TextractService(Protocol):
 class SQSService(Protocol):
     """Protocol for SQS service operations."""
 
-    async def send_message(self, queue_url: str, message: Dict[str, Any]) -> bool:
+    async def send_message(self, queue_url: str, message: dict[str, Any]) -> bool:
         """Send message to SQS queue."""
         ...
 

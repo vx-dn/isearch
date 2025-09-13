@@ -1,13 +1,13 @@
 """Receipt use cases implementation."""
 
 import logging
-from typing import Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
 from src.domain.entities.receipt import Receipt, ReceiptItem
+from src.domain.exceptions import ReceiptNotFoundError, ValidationError
 from src.domain.repositories.receipt_repository import ReceiptRepository
-from src.domain.exceptions import ValidationError, ReceiptNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class CreateReceiptUseCase:
     def __init__(self, receipt_repository: ReceiptRepository):
         self.receipt_repository = receipt_repository
 
-    async def execute(self, receipt_data: Dict[str, Any]) -> Receipt:
+    async def execute(self, receipt_data: dict[str, Any]) -> Receipt:
         """Execute create receipt use case."""
         try:
             # Generate receipt ID
@@ -100,7 +100,7 @@ class UpdateReceiptUseCase:
     def __init__(self, receipt_repository: ReceiptRepository):
         self.receipt_repository = receipt_repository
 
-    async def execute(self, receipt_id: str, update_data: Dict[str, Any]) -> Receipt:
+    async def execute(self, receipt_id: str, update_data: dict[str, Any]) -> Receipt:
         """Execute update receipt use case."""
         try:
             # Get existing receipt
@@ -190,7 +190,7 @@ class ProcessReceiptImageUseCase:
         self.s3_service = s3_service
         self.textract_service = textract_service
 
-    async def execute(self, image_data: Dict[str, Any]) -> Receipt:
+    async def execute(self, image_data: dict[str, Any]) -> Receipt:
         """Execute process receipt image use case."""
         try:
             user_id = image_data["user_id"]
@@ -241,8 +241,8 @@ class ProcessReceiptImageUseCase:
             raise ValidationError(f"Failed to process receipt image: {e}")
 
     def _parse_textract_results(
-        self, textract_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, textract_result: dict[str, Any]
+    ) -> dict[str, Any]:
         """Parse Textract results and extract structured data."""
         extracted_data = {
             "raw_text": "",

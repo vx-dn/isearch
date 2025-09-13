@@ -1,9 +1,10 @@
 """Meilisearch service implementation."""
 
-import aiohttp
 import asyncio
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any, Optional
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,9 @@ class MeilisearchService:
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict] = None,
-        params: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        data: Optional[dict] = None,
+        params: Optional[dict] = None,
+    ) -> dict[str, Any]:
         """Make HTTP request to Meilisearch."""
         url = f"{self.host}/{endpoint.lstrip('/')}"
 
@@ -59,7 +60,7 @@ class MeilisearchService:
             logger.error(f"Meilisearch request failed: {e}")
             raise
 
-    async def index_document(self, document: Dict[str, Any]) -> bool:
+    async def index_document(self, document: dict[str, Any]) -> bool:
         """Index a document in Meilisearch."""
         try:
             # Ensure the document has an id field
@@ -76,7 +77,7 @@ class MeilisearchService:
             logger.error(f"Failed to index document: {e}")
             return False
 
-    async def index_documents(self, documents: List[Dict[str, Any]]) -> bool:
+    async def index_documents(self, documents: list[dict[str, Any]]) -> bool:
         """Index multiple documents in Meilisearch."""
         try:
             if not documents:
@@ -100,13 +101,13 @@ class MeilisearchService:
     async def search(
         self,
         query: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         limit: int = 20,
         offset: int = 0,
-        sort: Optional[List[str]] = None,
-        attributes_to_highlight: Optional[List[str]] = None,
-        attributes_to_crop: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        sort: Optional[list[str]] = None,
+        attributes_to_highlight: Optional[list[str]] = None,
+        attributes_to_crop: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
         """Search documents in Meilisearch."""
         try:
             endpoint = f"/indexes/{self.index_name}/search"
@@ -164,7 +165,7 @@ class MeilisearchService:
             logger.error(f"Failed to delete document {document_id}: {e}")
             return False
 
-    async def delete_documents(self, document_ids: List[str]) -> int:
+    async def delete_documents(self, document_ids: list[str]) -> int:
         """Delete multiple documents from Meilisearch."""
         try:
             if not document_ids:
@@ -180,7 +181,7 @@ class MeilisearchService:
             logger.error(f"Failed to delete documents: {e}")
             return 0
 
-    async def update_document(self, document: Dict[str, Any]) -> bool:
+    async def update_document(self, document: dict[str, Any]) -> bool:
         """Update a document in Meilisearch."""
         try:
             # Ensure the document has an id field
@@ -197,7 +198,7 @@ class MeilisearchService:
             logger.error(f"Failed to update document: {e}")
             return False
 
-    async def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+    async def get_document(self, document_id: str) -> Optional[dict[str, Any]]:
         """Get a document by ID from Meilisearch."""
         try:
             endpoint = f"/indexes/{self.index_name}/documents/{document_id}"
@@ -222,7 +223,7 @@ class MeilisearchService:
             logger.error(f"Failed to clear index: {e}")
             return False
 
-    async def get_index_stats(self) -> Dict[str, Any]:
+    async def get_index_stats(self) -> dict[str, Any]:
         """Get index statistics."""
         try:
             endpoint = f"/indexes/{self.index_name}/stats"
@@ -232,7 +233,7 @@ class MeilisearchService:
             logger.error(f"Failed to get index stats: {e}")
             return {}
 
-    async def update_settings(self, settings: Dict[str, Any]) -> bool:
+    async def update_settings(self, settings: dict[str, Any]) -> bool:
         """Update index settings."""
         try:
             endpoint = f"/indexes/{self.index_name}/settings"
@@ -245,7 +246,7 @@ class MeilisearchService:
             logger.error(f"Failed to update settings: {e}")
             return False
 
-    async def get_settings(self) -> Dict[str, Any]:
+    async def get_settings(self) -> dict[str, Any]:
         """Get current index settings."""
         try:
             endpoint = f"/indexes/{self.index_name}/settings"
