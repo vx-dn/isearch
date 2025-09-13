@@ -3,7 +3,7 @@
 from typing import List, Protocol
 from ..repositories import ReceiptRepository, UserRepository, SearchRepository
 from ..dtos import DeleteReceiptsRequest, DeleteReceiptsResponse
-from ..exceptions import ResourceNotFoundError, UnauthorizedAccessError
+from ..exceptions import ResourceNotFoundError
 
 
 class S3Service(Protocol):
@@ -79,7 +79,7 @@ class DeleteReceiptsUseCase:
 
         # Delete from S3
         try:
-            s3_deleted_count = await self.s3_service.delete_objects(
+            await self.s3_service.delete_objects(
                 bucket=self.s3_bucket, keys=s3_keys_to_delete
             )
         except Exception:
@@ -88,9 +88,7 @@ class DeleteReceiptsUseCase:
             pass
 
         # Delete from search index
-        search_deleted_count = await self.search_repository.bulk_delete(
-            receipt_ids_to_delete
-        )
+        await self.search_repository.bulk_delete(receipt_ids_to_delete)
 
         # Delete from database
         db_deleted_count = await self.receipt_repository.bulk_delete(

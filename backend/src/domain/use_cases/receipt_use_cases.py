@@ -1,14 +1,13 @@
 """Receipt use cases implementation."""
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime, timezone
 import uuid
 
 from src.domain.entities.receipt import Receipt, ReceiptItem
 from src.domain.repositories.receipt_repository import ReceiptRepository
 from src.domain.exceptions import ValidationError, ReceiptNotFoundError
-from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +271,7 @@ class ProcessReceiptImageUseCase:
                         from dateutil import parser
 
                         extracted_data["purchase_date"] = parser.parse(date_str)
-                    except:
+                    except (ValueError, TypeError):
                         pass
 
                 # Extract line items

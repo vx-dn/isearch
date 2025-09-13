@@ -2,7 +2,7 @@
 
 import boto3
 import logging
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, Any
 from botocore.exceptions import ClientError
 import hmac
 import hashlib

@@ -119,3 +119,15 @@ module "api_gateway" {
   environment = var.environment
   common_tags = var.common_tags
 }
+
+# CloudFront module for frontend hosting
+module "cloudfront" {
+  source = "./modules/cloudfront"
+  
+  name_prefix               = local.name_prefix
+  environment              = var.environment
+  common_tags              = var.common_tags
+  api_gateway_domain_name  = module.api_gateway.api_gateway_domain_name
+  custom_domain            = var.frontend_custom_domain
+  acm_certificate_arn      = var.frontend_acm_certificate_arn
+}

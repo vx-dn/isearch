@@ -7,7 +7,7 @@ import logging
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import UserRepository
 from src.infrastructure.aws.dynamodb_service import DynamoDBService
-from src.domain.exceptions import UserNotFoundError, DatabaseError
+from src.domain.exceptions import DatabaseError
 from src.domain.config import DOMAIN_CONFIG
 
 logger = logging.getLogger(__name__)

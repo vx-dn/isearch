@@ -1,13 +1,11 @@
 """Unit tests for domain entities."""
 
-import pytest
 from datetime import datetime, timezone
 from decimal import Decimal
 import uuid
 
 from src.domain.entities.user import User
 from src.domain.entities.receipt import Receipt, ReceiptItem
-from src.domain.exceptions import ValidationError
 
 
 class TestUser:

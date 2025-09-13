@@ -2,10 +2,8 @@
 
 import pytest
 from unittest.mock import patch, AsyncMock
-import json
 import uuid
 from datetime import datetime, timezone
-from decimal import Decimal
 
 from fastapi import status
 from main import app
@@ -445,7 +443,6 @@ class TestImageProcessingWorkflow:
                 )
 
                 assert upload_response.status_code == status.HTTP_200_OK
-                upload_data = upload_response.json()
 
                 # Step 2: Simulate image upload (would be done directly to S3 in real scenario)
                 # Then trigger processing

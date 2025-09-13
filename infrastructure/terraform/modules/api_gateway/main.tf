@@ -330,3 +330,8 @@ output "api_key_value" {
   value       = aws_api_gateway_api_key.main.value
   sensitive   = true
 }
+
+output "api_gateway_domain_name" {
+  description = "Domain name of the API Gateway"
+  value       = "${aws_api_gateway_rest_api.main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com"
+}

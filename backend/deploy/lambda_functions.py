@@ -13,7 +13,6 @@ sys.path.append("/opt/src")
 sys.path.append("./src")
 
 import boto3
-from botocore.exceptions import ClientError
 
 # Import existing FastAPI services and DTOs
 try:
@@ -22,20 +21,12 @@ try:
     from src.application.services.search_service import SearchService
     from src.application.api.dto import (
         UserCreateRequest,
-        UserResponse,
         LoginRequest,
-        LoginResponse,
         ReceiptCreateRequest,
-        ReceiptResponse,
-        ReceiptListResponse,
         SearchRequest,
-        SearchResponse,
-        ErrorResponse,
         ForgotPasswordRequest,
         ResetPasswordRequest,
-        ChangePasswordRequest,
         ReceiptUpdateRequest,
-        ImageUploadResponse,
         PaginationParams,
     )
     from src.domain.exceptions import (
@@ -45,7 +36,6 @@ try:
         AuthenticationError,
         AuthorizationError,
     )
-    from src.infrastructure.config import infrastructure_config
 except ImportError as e:
     logging.warning(f"Could not import FastAPI services: {e}")
     # Fallback imports for basic functionality
@@ -238,12 +228,11 @@ def image_processor_handler(event: Dict[str, Any], context: Any) -> Dict[str, An
 
                 user_id = key_parts[1]
                 receipt_id = key_parts[2]
-                filename = key_parts[3]
 
                 logger.info(f"Processing receipt {receipt_id} for user {user_id}")
 
                 # Use existing receipt service to handle image processing
-                result = run_async(
+                run_async(
                     receipt_service.process_uploaded_image(
                         receipt_id=receipt_id, user_id=user_id, bucket=bucket, key=key
                     )
@@ -699,7 +688,7 @@ def handle_forgot_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]
             return create_error_response(400, "Email is required")
 
         request = ForgotPasswordRequest(**body)
-        result = run_async(user_service.forgot_password(request))
+        run_async(user_service.forgot_password(request))
 
         return create_success_response({"message": "Password reset email sent"})
 
@@ -718,7 +707,7 @@ def handle_reset_password(user_service, body: Dict[str, Any]) -> Dict[str, Any]:
                 return create_error_response(400, f"{field} is required")
 
         request = ResetPasswordRequest(**body)
-        result = run_async(user_service.reset_password(request))
+        run_async(user_service.reset_password(request))
 
         return create_success_response({"message": "Password reset successful"})
 
@@ -903,7 +892,7 @@ def handle_delete_receipt(
     try:
         user_id = user_context.get("user_id", "default-user-id")
 
-        result = run_async(receipt_service.delete_receipt(receipt_id, user_id))
+        run_async(receipt_service.delete_receipt(receipt_id, user_id))
         return create_success_response({"message": "Receipt deleted successfully"})
 
     except ReceiptNotFoundError as e:
@@ -1086,10 +1075,3 @@ def handle_search_stats(search_service, user_id: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Search stats error: {e}")
         return create_error_response(500, "Failed to get search statistics")
-
-
-def index_in_meilisearch(receipt_id: str, text: str) -> None:
-    """Index receipt text in Meilisearch."""
-    # This would implement Meilisearch indexing
-    # Placeholder for now
-    pass

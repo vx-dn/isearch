@@ -2,13 +2,12 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
-import asyncio
 import logging
 
 from src.domain.entities.receipt import Receipt
 from src.domain.repositories.receipt_repository import ReceiptRepository
 from src.infrastructure.aws.dynamodb_service import DynamoDBService
-from src.domain.exceptions import ReceiptNotFoundError, DatabaseError
+from src.domain.exceptions import DatabaseError
 from src.domain.config import DOMAIN_CONFIG
 
 logger = logging.getLogger(__name__)

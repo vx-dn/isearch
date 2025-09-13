@@ -1,7 +1,6 @@
 """Meilisearch implementation of search repository."""
 
 from typing import List, Optional, Dict, Any
-import asyncio
 import logging
 
 from src.domain.entities.receipt import Receipt

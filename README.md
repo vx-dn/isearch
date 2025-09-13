@@ -1,15 +1,17 @@
 # Receipt Search App
 
-A serverless receipt search application built with AWS Lambda, FastAPI, and Meilisearch for intelligent document processing and search.
+A full-stack serverless receipt search application with Vue.js frontend and Python FastAPI backend, built for intelligent document processing and search.
 
 ## 🏗️ Architecture
 
+- **Frontend**: Vue.js 3 + TypeScript with S3/CloudFront hosting
 - **Backend**: Python FastAPI with AWS Lambda
 - **Search**: Meilisearch for full-text search
 - **Authentication**: AWS Cognito
 - **Storage**: S3 for files, DynamoDB for metadata
 - **Processing**: AWS Textract for OCR
 - **Infrastructure**: Terraform for AWS resources
+- **CI/CD**: GitHub Actions for automated deployment
 
 ## 🚀 Quick Start
 
@@ -25,28 +27,33 @@ A serverless receipt search application built with AWS Lambda, FastAPI, and Meil
 1. **Clone and setup**:
    ```bash
    git clone https://github.com/vx-dn/isearch.git
-   cd isearch
+   cd isearch/receipt-search-app
    ```
 
-2. **Setup environment variables**:
+2. **Backend setup**:
    ```bash
    cd backend
    cp .env.example .env
    # Edit .env with your actual values (never commit this file!)
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   # For development (includes testing, linting, etc.)
+   
+   # Install dependencies
    pip install -r requirements-dev.txt
    
-   # For production (runtime only)
-   pip install -r requirements.txt
+   # Run tests
+   pytest
    ```
 
-4. **Run tests**:
+3. **Frontend setup**:
    ```bash
-   pytest
+   cd ../frontend
+   npm install
+   
+   # Create environment file
+   cp .env.example .env.local
+   # Edit with your backend URL
+   
+   # Start development server
+   npm run dev
    ```
 
 ### Important: Environment Variables Security
@@ -209,9 +216,125 @@ aws cognito-idp admin-create-user \
   --message-action SUPPRESS
 ```
 
+### Frontend Deployment
+
+The frontend is a Vue.js application that provides a ChatGPT-like interface for receipt search functionality.
+
+#### Option 1: GitHub Actions (Recommended)
+
+**Prerequisites:**
+Ensure backend infrastructure is deployed first (see backend deployment above).
+
+**Step 1: Deploy Infrastructure with Frontend**
+```bash
+cd infrastructure/terraform
+
+# Deploy both backend and frontend infrastructure
+terraform apply -var-file=environments/dev.tfvars
+
+# Note the frontend URL from outputs
+terraform output frontend_url
+```
+
+**Step 2: Automated Frontend Deployment**
+```bash
+# Frontend automatically deploys when you push changes to main branch
+git add frontend/
+git commit -m "Deploy frontend updates"
+git push origin main
+
+# Or trigger manual deployment in GitHub Actions:
+# 1. Go to Actions tab in GitHub
+# 2. Select "Deploy Frontend" workflow  
+# 3. Click "Run workflow"
+```
+
+#### Option 2: Manual Frontend Deployment
+
+**Prerequisites:**
+```bash
+# Ensure Node.js 18+ is installed
+node --version
+
+# Ensure AWS CLI is configured
+aws --version
+```
+
+**Step 1: Build Frontend**
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Build for production
+npm run build
+```
+
+**Step 2: Deploy to AWS**
+```bash
+# Make deployment script executable
+chmod +x ../infrastructure/scripts/deploy-frontend.sh
+
+# Deploy frontend to S3/CloudFront
+../infrastructure/scripts/deploy-frontend.sh
+```
+
+**Step 3: Verify Deployment**
+```bash
+# Get frontend URL from Terraform
+cd ../infrastructure/terraform
+terraform output frontend_url
+
+# Test health endpoint
+curl https://your-frontend-url.com/health.json
+
+# Visit the URL in browser
+```
+
+#### Frontend Architecture
+
+```
+Users → CloudFront CDN → S3 Static Files
+      → CloudFront CDN → API Gateway → Lambda Functions (for /api/* requests)
+```
+
+**Components:**
+- **S3 Bucket**: Hosts static files (HTML, CSS, JS)
+- **CloudFront**: Global CDN for fast content delivery
+- **API Proxy**: Routes `/api/*` requests to backend API Gateway
+- **Health Check**: `/health.json` endpoint for monitoring
+
+#### Frontend Configuration
+
+**Environment Variables:**
+```bash
+# Frontend environment variables (.env.production)
+VITE_API_BASE_URL=https://your-api-gateway-url.com/dev
+VITE_APP_TITLE="Receipt Search"
+VITE_ENABLE_ANALYTICS=true
+```
+
+**Build Configuration:**
+- **Framework**: Vue.js 3 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **State Management**: Pinia
+- **Routing**: Vue Router
+
+#### Frontend Features
+
+- ✅ **Chat Interface**: ChatGPT-like conversation UI
+- ✅ **Receipt Upload**: Drag & drop file upload
+- ✅ **Smart Search**: Natural language search queries
+- ✅ **Authentication**: Integrated with AWS Cognito
+- ✅ **Responsive**: Mobile-friendly design
+- ✅ **Real-time**: Live search and updates
+- ✅ **Error Handling**: User-friendly error messages
+
 #### Troubleshooting Deployment
 
-**Common Issues:**
+**Common Backend Issues:**
 
 1. **Terraform Permission Errors:**
    ```bash
@@ -241,8 +364,61 @@ aws cognito-idp admin-create-user \
    # Meilisearch runs in private subnet, accessible only from Lambda functions
    ```
 
+**Common Frontend Issues:**
+
+1. **Build Failures:**
+   ```bash
+   # Check Node.js version (requires 18+)
+   node --version
+   
+   # Clear npm cache and reinstall
+   cd frontend
+   rm -rf node_modules package-lock.json
+   npm install
+   
+   # Check for TypeScript errors
+   npm run type-check
+   ```
+
+2. **API Connection Issues:**
+   ```bash
+   # Verify backend is deployed and accessible
+   curl https://your-api-gateway-url.com/dev/api/v1/health
+   
+   # Check CORS configuration in API Gateway
+   # Ensure frontend domain is allowed in CORS origins
+   
+   # Verify environment variables
+   cat frontend/.env.production
+   ```
+
+3. **CloudFront/S3 Issues:**
+   ```bash
+   # Check S3 bucket exists and has files
+   aws s3 ls s3://your-frontend-bucket-name --recursive
+   
+   # Verify CloudFront distribution status
+   aws cloudfront list-distributions --query 'DistributionList.Items[].{Id:Id,Status:Status,DomainName:DomainName}'
+   
+   # Create cache invalidation if needed
+   aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+   ```
+
+4. **Deployment Script Issues:**
+   ```bash
+   # Make script executable
+   chmod +x infrastructure/scripts/deploy-frontend.sh
+   
+   # Check AWS credentials
+   aws sts get-caller-identity
+   
+   # Run script with debug
+   bash -x infrastructure/scripts/deploy-frontend.sh
+   ```
+
 #### First-Time Setup Checklist
 
+**Backend Setup:**
 - [ ] AWS CLI configured with appropriate permissions
 - [ ] GitHub secrets configured
 - [ ] Terraform infrastructure deployed successfully
@@ -253,6 +429,17 @@ aws cognito-idp admin-create-user \
 - [ ] S3 bucket created and accessible
 - [ ] DynamoDB tables created
 - [ ] CloudWatch logs showing function executions
+
+**Frontend Setup:**
+- [ ] Node.js 18+ installed
+- [ ] Frontend dependencies installed (`npm install`)
+- [ ] Frontend builds successfully (`npm run build`)
+- [ ] S3 bucket for frontend hosting created
+- [ ] CloudFront distribution deployed and active
+- [ ] Frontend accessible via CloudFront URL
+- [ ] API calls working from frontend to backend
+- [ ] Health check endpoint responding
+- [ ] Authentication flow working end-to-end
 
 ## 🔧 Configuration
 
@@ -284,13 +471,24 @@ The project includes a hybrid flexible CI/CD workflow that:
 - Infrastructure deployment (when enabled)
 - Multi-environment support (dev/staging/prod)
 
-## 📡 API Endpoints
+## 📡 API Endpoints & Frontend
 
-After deployment, your API will be available at:
+### Frontend Application
+After deployment, your frontend will be available at:
+`https://[cloudfront-id].cloudfront.net` or your custom domain
+
+**Frontend Features:**
+- Chat-based interface for receipt interaction
+- Upload receipts via drag & drop
+- Search receipts using natural language
+- View receipt details and extracted data
+- User authentication and profile management
+
+### Backend API
+API endpoints are available at:
 `https://[api-id].execute-api.ap-southeast-1.amazonaws.com/dev`
 
-### Available Endpoints
-
+**Available Endpoints:**
 - `GET /api/v1/health` - Health check
 - `POST /api/v1/auth/login` - User authentication
 - `GET /api/v1/auth/me` - Get current user
@@ -302,7 +500,23 @@ After deployment, your API will be available at:
 
 ## 💰 Cost Management
 
-### Stop Services (Save ~30-40% costs):
+### Monthly Cost Estimates
+
+**Backend Services:**
+- Lambda functions: ~$5-15 (usage-based)
+- API Gateway: ~$3-10 (per million requests)
+- EC2 (Meilisearch): ~$15-30 (t3.small instance)
+- S3 storage: ~$1-5 (depending on receipts stored)
+- DynamoDB: ~$1-5 (usage-based)
+
+**Frontend Services:**
+- S3 hosting: ~$0.02 (1GB storage)
+- CloudFront CDN: ~$0.85 (10GB data transfer)
+- Route 53 (if using custom domain): ~$0.50
+
+**Total estimated cost: $25-65/month** (varies by usage)
+
+### Stop Services (Save ~60% costs):
 ```bash
 cd backend/deploy
 ./stop_services.sh
@@ -313,26 +527,46 @@ cd backend/deploy
 ./start_services.sh
 ```
 
-### What gets stopped:
-- Meilisearch EC2 instance
+**What gets stopped:**
+- Meilisearch EC2 instance (biggest cost saver)
 - Non-essential resources
-- Keeps Lambda functions (they're pay-per-use)
+- Keeps Lambda functions (pay-per-use)
+- Keeps S3 and CloudFront (minimal cost when not accessed)
 
 ## 🧪 Testing
 
-### Run Test Suite
+### Backend Testing
 ```bash
+cd backend
+
 # Unit tests
-pytest backend/tests/unit/
+pytest tests/unit/
 
 # Integration tests  
-pytest backend/tests/integration/
+pytest tests/integration/
 
 # End-to-end tests
-pytest backend/tests/e2e/
+pytest tests/e2e/
 
 # All tests
 pytest
+```
+
+### Frontend Testing
+```bash
+cd frontend
+
+# Unit tests
+npm run test:unit
+
+# End-to-end tests
+npm run test:e2e
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
 ```
 
 ### Test Deployment
@@ -341,14 +575,39 @@ cd backend/deploy
 ./test_deployment.sh    # Test Lambda functions
 ./test_pipeline.sh      # Test end-to-end pipeline
 ./test_auth.sh         # Test authentication
+
+# Test frontend health
+curl https://your-frontend-url.com/health.json
 ```
 
 ## 🔍 Monitoring
 
+### Backend Monitoring
 - **API Gateway**: Logs and metrics in CloudWatch
 - **Lambda Functions**: Individual function logs and metrics
 - **Meilisearch**: EC2 instance monitoring
 - **Queue Processing**: SQS metrics and dead letter queue monitoring
+
+### Frontend Monitoring
+- **CloudFront**: Distribution metrics and cache performance
+- **S3**: Storage metrics and request patterns  
+- **Health Check**: Monitor `/health.json` endpoint
+- **User Analytics**: Optional integration with analytics services
+
+### Useful Monitoring Commands
+```bash
+# Backend health
+curl https://your-api-gateway-url.com/dev/api/v1/health
+
+# Frontend health  
+curl https://your-frontend-url.com/health.json
+
+# Check CloudFront distribution status
+aws cloudfront get-distribution --id YOUR_DISTRIBUTION_ID
+
+# View recent CloudFront logs
+aws logs tail /aws/cloudfront/YOUR_DISTRIBUTION_ID --follow
+```
 
 ## 🛠️ Troubleshooting
 
@@ -377,29 +636,48 @@ curl http://[private-ip]:7700/health
 ```
 receipt-search-app/
 ├── .github/workflows/          # GitHub Actions CI/CD
+│   ├── hybrid-deploy.yml      # Backend deployment workflow
+│   └── deploy-frontend.yml    # Frontend deployment workflow
 ├── backend/
 │   ├── src/                   # Python application code
 │   ├── tests/                 # Test suite
 │   └── deploy/               # Deployment scripts
+├── frontend/
+│   ├── src/                   # Vue.js application code
+│   ├── public/               # Static assets
+│   ├── dist/                 # Built files (generated)
+│   └── package.json          # Node.js dependencies
 ├── infrastructure/
-│   └── terraform/            # Infrastructure as code
+│   ├── terraform/            # Infrastructure as code
+│   │   └── modules/          # Terraform modules
+│   │       └── cloudfront/   # Frontend hosting module
+│   └── scripts/              # Deployment scripts
+│       └── deploy-frontend.sh
 └── README.md                 # This file
 ```
 
 ### Contributing
 
 1. Create a feature branch
-2. Make changes and add tests
+2. Make changes and add tests (backend: pytest, frontend: npm test)
 3. Run test suite locally
 4. Push to GitHub (triggers CI/CD)
 5. Create pull request
 
-## 📄 License
+## � Documentation
+
+- **Backend API**: See `backend/README.md` for detailed API documentation
+- **Frontend**: See `frontend/README.md` for component documentation  
+- **Infrastructure**: See `infrastructure/README.md` for Terraform details
+- **Deployment**: See `FRONTEND-DEPLOYMENT-SUMMARY.md` for frontend deployment details
+
+## �📄 License
 
 This project is private and proprietary.
 
 ---
 
-**Last Updated**: September 12, 2025  
+**Last Updated**: September 13, 2025  
 **Environment**: Development  
-**Region**: ap-southeast-1 (Singapore)
+**Region**: ap-southeast-1 (Singapore)  
+**Architecture**: Full-stack serverless with Vue.js frontend and Python FastAPI backend

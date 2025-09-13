@@ -1,0 +1,13 @@
+{
+  "name": "receipt-search-frontend",
+  "version": "1.0.0",
+  "status": "healthy",
+  "build": {
+    "timestamp": "BUILD_TIMESTAMP",
+    "commit": "BUILD_COMMIT",
+    "environment": "BUILD_ENVIRONMENT"
+  },
+  "api": {
+    "url": "API_URL"
+  }
+}

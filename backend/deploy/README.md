@@ -2,7 +2,7 @@
 
 **📍 Location**: `backend/deploy/`  
 **📋 Status**: All functions deployed and operational  
-**🔗 Overview**: See `/DEPLOYMENT_SUMMARY.md` for infrastructure overview
+**🔗 Overview**: See main `/README.md` for complete infrastructure overview
 
 This guide covers Lambda function deployment, testing, and management for the Receipt Search Application.
 

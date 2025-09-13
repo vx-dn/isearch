@@ -2,8 +2,7 @@
 
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Optional, Any
-import json
+from typing import Dict, List, Any
 import logging
 
 logger = logging.getLogger(__name__)

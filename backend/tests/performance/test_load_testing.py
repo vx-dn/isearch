@@ -10,7 +10,6 @@ from main import app
 from src.application.auth.middleware import get_current_active_user
 from src.application.services.receipt_service import receipt_service
 from src.application.services.search_service import search_service
-from src.domain.entities.user import User
 
 
 @pytest.mark.performance

@@ -1,7 +1,7 @@
 """User use cases implementation."""
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime, timezone
 import uuid
 

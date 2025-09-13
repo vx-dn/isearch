@@ -1,7 +1,7 @@
 """Unit tests for domain use cases."""
 
 import pytest
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 from datetime import datetime, timezone
 from decimal import Decimal
 import uuid
@@ -9,21 +9,15 @@ import uuid
 from src.domain.use_cases.user_use_cases import (
     CreateUserUseCase,
     GetUserUseCase,
-    UpdateUserUseCase,
-    DeleteUserUseCase,
 )
 from src.domain.use_cases.receipt_use_cases import (
     CreateReceiptUseCase,
-    GetReceiptUseCase,
-    UpdateReceiptUseCase,
-    DeleteReceiptUseCase,
     ProcessReceiptImageUseCase,
 )
 from src.domain.entities.user import User
-from src.domain.entities.receipt import Receipt, ReceiptItem
+from src.domain.entities.receipt import Receipt
 from src.domain.exceptions import (
     UserNotFoundError,
-    ReceiptNotFoundError,
     ValidationError,
 )
 

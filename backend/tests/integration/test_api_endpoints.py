@@ -1,11 +1,8 @@
 """Integration tests for API endpoints - Fixed version."""
 
 import pytest
-from unittest.mock import patch, AsyncMock
-import json
+from unittest.mock import patch
 from datetime import datetime, timezone
-from decimal import Decimal
-import uuid
 
 from fastapi import status
 from src.application.api.dto import UserResponse

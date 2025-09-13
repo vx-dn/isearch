@@ -1,10 +1,8 @@
 """Receipt service for application layer."""
 
 import logging
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
-import asyncio
 
 from src.domain.entities.receipt import Receipt
 from src.domain.use_cases.receipt_use_cases import (
@@ -341,7 +339,7 @@ class ReceiptService:
                     "timestamp": datetime.utcnow().isoformat(),
                 }
 
-                queue_url = f"receipt-processing-queue"  # This should come from config
+                queue_url = "receipt-processing-queue"  # This should come from config
                 await self.sqs_service.send_message(queue_url, message)
 
                 logger.info(f"Queued image processing for {image_id}")

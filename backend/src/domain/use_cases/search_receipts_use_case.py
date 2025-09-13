@@ -1,7 +1,7 @@
 """Search receipts use case implementation."""
 
 from datetime import datetime
-from typing import Protocol, List
+from typing import Protocol
 from ..repositories import SearchRepository, UserRepository
 from ..dtos import ReceiptSearchRequest, ReceiptSearchResponse, ReceiptSearchResult
 from ..exceptions import ResourceNotFoundError, ValidationError

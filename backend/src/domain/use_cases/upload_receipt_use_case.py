@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import List, Protocol
+from typing import Protocol
 from ..entities import Receipt, ProcessingStatus
 from ..repositories import ReceiptRepository, UserRepository
 from ..dtos import UploadReceiptRequest, UploadReceiptResponse

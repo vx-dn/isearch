@@ -1,8 +1,7 @@
 """Search service for application layer."""
 
 import logging
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+from typing import List, Dict, Any
 
 from src.application.api.dto import (
     SearchRequest,

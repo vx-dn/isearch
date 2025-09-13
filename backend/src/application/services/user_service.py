@@ -1,9 +1,7 @@
 """User service for application layer."""
 
 import logging
-from typing import Optional, Dict, Any
-from datetime import datetime, timezone
-import uuid
+from typing import Dict, Any
 
 from src.domain.entities.user import User
 from src.domain.use_cases.user_use_cases import (

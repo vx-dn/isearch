@@ -3,7 +3,6 @@
 
 # Core web framework
 fastapi>=0.116.0,<1.0.0
-starlette>=0.47.0,<1.0.0
 uvicorn[standard]>=0.35.0,<1.0.0
 pydantic>=2.5.0,<3.0.0
 pydantic-settings>=2.1.0,<3.0.0
@@ -36,9 +35,9 @@ orjson>=3.11.0,<4.0.0
 # Data validation and serialization
 marshmallow>=4.0.0,<5.0.0
 
-# Background task processing
-celery>=5.5.0,<6.0.0
-redis>=6.0.0,<7.0.0
+# Background task processing (if using queues)
+# celery>=5.5.0,<6.0.0
+# redis>=6.0.0,<7.0.0
 
-# CORS middleware
-fastapi-cors>=0.0.6,<1.0.0
+# CORS middleware (FastAPI has built-in CORS)
+# fastapi-cors>=0.0.6,<1.0.0

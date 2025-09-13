@@ -1,6 +1,5 @@
 """Receipt API routes."""
 
-from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from src.application.api.dto import (

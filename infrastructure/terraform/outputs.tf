@@ -49,6 +49,38 @@ output "cognito_domain" {
   value       = module.cognito.cognito_domain
 }
 
+# Frontend outputs
+output "frontend_url" {
+  description = "URL of the frontend application"
+  value       = module.cloudfront.frontend_url
+}
+
+output "frontend_bucket_name" {
+  description = "Name of the S3 bucket for frontend hosting"
+  value       = module.cloudfront.frontend_bucket_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "ID of the CloudFront distribution for frontend"
+  value       = module.cloudfront.cloudfront_distribution_id
+}
+
+output "cloudfront_domain_name" {
+  description = "Domain name of the CloudFront distribution"
+  value       = module.cloudfront.cloudfront_domain_name
+}
+
+# API Gateway outputs
+output "api_url" {
+  description = "URL of the API Gateway"
+  value       = module.api_gateway.api_url
+}
+
+output "api_id" {
+  description = "ID of the API Gateway"
+  value       = module.api_gateway.api_id
+}
+
 # IAM outputs
 output "lambda_execution_role_arn" {
   description = "ARN of the Lambda execution role"

@@ -1,11 +1,10 @@
 """Process receipt use case implementation."""
 
-import json
 from typing import Protocol, Dict, Any
 from ..entities import ProcessingStatus
 from ..repositories import ReceiptRepository, SearchRepository
 from ..dtos import ProcessReceiptRequest, ProcessReceiptResponse
-from ..exceptions import ResourceNotFoundError, ProcessingError
+from ..exceptions import ResourceNotFoundError
 from ..config import DOMAIN_CONFIG
 
 

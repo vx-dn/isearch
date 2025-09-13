@@ -207,7 +207,6 @@ class TestDataIntegrityScenarios:
 
         # Create a mock service for dependency override
         from unittest.mock import AsyncMock, patch
-        from src.domain.entities.receipt import Receipt
         from src.application.services.receipt_service import ReceiptService
         from src.application.auth.middleware import get_current_active_user
         from src.domain.exceptions import ReceiptNotFoundError

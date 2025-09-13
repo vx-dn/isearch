@@ -147,25 +147,25 @@ class InfrastructureConfig:
             logger.info("Initializing infrastructure services...")
 
             # Initialize AWS services
-            dynamodb = self.get_dynamodb_service()
-            s3 = self.get_s3_service()
-            textract = self.get_textract_service()
-            sqs = self.get_sqs_service()
+            self.get_dynamodb_service()
+            self.get_s3_service()
+            self.get_textract_service()
+            self.get_sqs_service()
 
             # Initialize repositories
-            receipt_repo = self.get_receipt_repository()
-            user_repo = self.get_user_repository()
+            self.get_receipt_repository()
+            self.get_user_repository()
 
             # Initialize search service (optional - may not be available in all environments)
             try:
-                search_repo = self.get_search_repository()
+                self.get_search_repository()
                 logger.info("Search service initialized successfully")
             except Exception as e:
                 logger.warning(f"Search service initialization failed: {e}")
 
             # Initialize Cognito service (optional - may not be available in development)
             try:
-                cognito = self.get_cognito_service()
+                self.get_cognito_service()
                 logger.info("Cognito service initialized successfully")
             except Exception as e:
                 logger.warning(f"Cognito service initialization failed: {e}")
@@ -182,7 +182,7 @@ class InfrastructureConfig:
 
         # Check DynamoDB
         try:
-            dynamodb = self.get_dynamodb_service()
+            self.get_dynamodb_service()
             # Try to describe a table to check connectivity
             health_status["services"]["dynamodb"] = "healthy"
         except Exception as e:
@@ -191,7 +191,7 @@ class InfrastructureConfig:
 
         # Check S3
         try:
-            s3 = self.get_s3_service()
+            self.get_s3_service()
             # Try to list bucket to check connectivity
             health_status["services"]["s3"] = "healthy"
         except Exception as e:
@@ -200,7 +200,7 @@ class InfrastructureConfig:
 
         # Check Textract
         try:
-            textract = self.get_textract_service()
+            self.get_textract_service()
             health_status["services"]["textract"] = "healthy"
         except Exception as e:
             health_status["services"]["textract"] = f"unhealthy: {e}"
@@ -208,7 +208,7 @@ class InfrastructureConfig:
 
         # Check SQS
         try:
-            sqs = self.get_sqs_service()
+            self.get_sqs_service()
             health_status["services"]["sqs"] = "healthy"
         except Exception as e:
             health_status["services"]["sqs"] = f"unhealthy: {e}"
@@ -217,7 +217,7 @@ class InfrastructureConfig:
         # Check Meilisearch (optional)
         try:
             meilisearch = self.get_meilisearch_service()
-            stats = await meilisearch.get_index_stats()
+            await meilisearch.get_index_stats()
             health_status["services"]["meilisearch"] = "healthy"
         except Exception as e:
             health_status["services"]["meilisearch"] = f"unavailable: {e}"
@@ -225,7 +225,7 @@ class InfrastructureConfig:
 
         # Check Cognito (optional)
         try:
-            cognito = self.get_cognito_service()
+            self.get_cognito_service()
             health_status["services"]["cognito"] = "healthy"
         except Exception as e:
             health_status["services"]["cognito"] = f"unavailable: {e}"

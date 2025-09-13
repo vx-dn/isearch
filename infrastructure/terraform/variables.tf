@@ -57,3 +57,16 @@ variable "common_tags" {
     ManagedBy   = "terraform"
   }
 }
+
+# Frontend deployment variables
+variable "frontend_custom_domain" {
+  description = "Custom domain name for the frontend (optional)"
+  type        = string
+  default     = null
+}
+
+variable "frontend_acm_certificate_arn" {
+  description = "ARN of the ACM certificate for frontend custom domain (optional)"
+  type        = string
+  default     = null
+}

@@ -2,7 +2,7 @@
 
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from PIL import Image
 import io
 import logging
