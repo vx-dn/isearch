@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 from enum import Enum
 
 
@@ -62,8 +62,7 @@ class UserResponse(BaseModel):
     updated_at: datetime
     is_active: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === Authentication API DTOs ===
@@ -138,8 +137,7 @@ class ReceiptItemResponse(BaseModel):
     total_price: Optional[Decimal] = None
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReceiptCreateRequest(BaseModel):
@@ -192,8 +190,7 @@ class ReceiptResponse(BaseModel):
     updated_at: datetime
     version: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReceiptListResponse(BaseModel):
@@ -352,7 +349,8 @@ class PaginationParams(BaseModel):
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
 
-    @validator("page_size")
+    @field_validator("page_size")
+    @classmethod
     def validate_page_size(cls, v):
         if v > 100:
             raise ValueError("page_size cannot be greater than 100")

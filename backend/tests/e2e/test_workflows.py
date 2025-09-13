@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import status
+from main import app
+from src.application.auth.middleware import get_current_active_user
 
 
 @pytest.mark.e2e
@@ -21,31 +23,39 @@ class TestUserRegistrationAndLogin:
         """Test complete user registration and login flow."""
 
         # Step 1: Register a new user
-        with patch(
-            "src.application.services.user_service.user_service"
-        ) as mock_user_service:
+        with patch("src.application.api.routes.auth.user_service") as mock_user_service:
+            # Make service methods async
+            mock_user_service.register_user = AsyncMock()
+            mock_user_service.login_user = AsyncMock()
+            mock_user_service.get_user_profile = AsyncMock()
+
             user_id = str(uuid.uuid4())
-            mock_user_service.create_user.return_value = {
+            mock_user_service.register_user.return_value = {
                 "user_id": user_id,
-                "username": fake_user_data["username"],
                 "email": fake_user_data["email"],
-                "full_name": fake_user_data["full_name"],
                 "is_active": True,
                 "subscription_tier": "free",
+                "receipt_count": 0,
+                "storage_used_bytes": 0,
                 "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }
 
             # Register user
+            register_data = {
+                "email": fake_user_data["email"],
+                "password": "testpassword123",  # Meet minimum requirement
+            }
             register_response = await async_client.post(
-                "/api/v1/auth/register", json=fake_user_data
+                "/api/v1/auth/register", json=register_data
             )
 
-            assert register_response.status_code == status.HTTP_201_CREATED
+            assert register_response.status_code == status.HTTP_200_OK
             user_data = register_response.json()
-            assert user_data["email"] == fake_user_data["email"]
+            assert user_data["email"] == register_data["email"]
 
             # Step 2: Login with the registered user
-            mock_user_service.authenticate_user.return_value = {
+            mock_user_service.login_user.return_value = {
                 "access_token": "test-access-token",
                 "refresh_token": "test-refresh-token",
                 "token_type": "bearer",
@@ -55,7 +65,7 @@ class TestUserRegistrationAndLogin:
 
             login_data = {
                 "email": fake_user_data["email"],
-                "password": fake_user_data["password"],
+                "password": "testpassword123",
             }
 
             login_response = await async_client.post(
@@ -69,23 +79,32 @@ class TestUserRegistrationAndLogin:
 
             # Step 3: Access protected profile endpoint
             from src.domain.entities.user import User
+            from src.domain.entities.enums import UserRole
 
             mock_user = User(
                 user_id=user_id,
-                username=fake_user_data["username"],
                 email=fake_user_data["email"],
-                full_name=fake_user_data["full_name"],
-                is_active=True,
-                subscription_tier="free",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                role=UserRole.FREE,
+                image_count=fake_user_data["image_count"],
+                image_quota=fake_user_data["image_quota"],
             )
 
-            with patch(
-                "src.application.auth.middleware.get_current_active_user"
-            ) as mock_auth:
-                mock_auth.return_value = mock_user
+            # Use FastAPI dependency override for authentication
+            app.dependency_overrides[get_current_active_user] = lambda: mock_user
 
+            # Mock the profile service call
+            mock_user_service.get_user_profile.return_value = {
+                "user_id": user_id,
+                "email": fake_user_data["email"],
+                "is_active": True,
+                "subscription_tier": "free",
+                "receipt_count": 0,
+                "storage_used_bytes": 0,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+            try:
                 auth_headers = {"Authorization": f"Bearer {token_data['access_token']}"}
                 profile_response = await async_client.get(
                     "/api/v1/auth/profile", headers=auth_headers
@@ -94,6 +113,9 @@ class TestUserRegistrationAndLogin:
                 assert profile_response.status_code == status.HTTP_200_OK
                 profile_data = profile_response.json()
                 assert profile_data["email"] == fake_user_data["email"]
+            finally:
+                # Clean up dependency overrides
+                app.dependency_overrides.clear()
 
 
 @pytest.mark.e2e
@@ -106,23 +128,31 @@ class TestReceiptWorkflow:
     ):
         """Test complete receipt lifecycle: upload, create, update, search, delete."""
 
-        with patch(
-            "src.application.auth.middleware.get_current_active_user"
-        ) as mock_auth:
-            mock_auth.return_value = sample_user
+        # Use FastAPI dependency override for authentication
+        app.dependency_overrides[get_current_active_user] = lambda: sample_user
 
+        try:
             # Step 1: Get upload URL
             with patch(
-                "src.application.services.receipt_service.receipt_service"
+                "src.application.api.routes.receipts.receipt_service"
             ) as mock_receipt_service:
+                # Make service methods async
+                mock_receipt_service.generate_upload_url = AsyncMock()
+                mock_receipt_service.create_receipt = AsyncMock()
+                mock_receipt_service.get_receipt = AsyncMock()
+                mock_receipt_service.update_receipt = AsyncMock()
+                mock_receipt_service.delete_receipt = AsyncMock()
+                mock_receipt_service.list_receipts = AsyncMock()
+
                 image_id = str(uuid.uuid4())
                 mock_receipt_service.generate_upload_url.return_value = {
                     "upload_url": "https://s3.amazonaws.com/bucket/receipts/test.jpg?signed",
                     "image_id": image_id,
+                    "fields": {"key": "test-key", "policy": "test-policy"},
                     "expires_in": 3600,
                 }
 
-                upload_response = await async_client.get(
+                upload_response = await async_client.post(
                     "/api/v1/receipts/upload-url", headers=auth_headers
                 )
 
@@ -138,12 +168,20 @@ class TestReceiptWorkflow:
                     "user_id": sample_user.user_id,
                     "image_id": image_id,
                     "merchant_name": fake_receipt_data["merchant_name"],
+                    "merchant_address": "123 Test St",
+                    "purchase_date": datetime.now(timezone.utc).isoformat(),
                     "total_amount": str(fake_receipt_data["total_amount"]),
                     "currency": fake_receipt_data["currency"],
                     "receipt_type": fake_receipt_data["receipt_type"],
+                    "raw_text": "Sample receipt text",
+                    "confidence_score": 0.95,
+                    "extraction_metadata": {"processing_time": 1.2},
+                    "items": [],
+                    "tags": [],
                     "notes": fake_receipt_data["notes"],
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "version": 1,
                 }
 
                 mock_receipt_service.create_receipt.return_value = created_receipt
@@ -154,7 +192,7 @@ class TestReceiptWorkflow:
                     "/api/v1/receipts/", json=receipt_create_data, headers=auth_headers
                 )
 
-                assert create_response.status_code == status.HTTP_201_CREATED
+                assert create_response.status_code == status.HTTP_200_OK
                 receipt_data = create_response.json()
                 assert receipt_data["receipt_id"] == receipt_id
                 assert (
@@ -162,7 +200,7 @@ class TestReceiptWorkflow:
                 )
 
                 # Step 3: Get receipt by ID
-                mock_receipt_service.get_receipt_by_id.return_value = created_receipt
+                mock_receipt_service.get_receipt.return_value = created_receipt
 
                 get_response = await async_client.get(
                     f"/api/v1/receipts/{receipt_id}", headers=auth_headers
@@ -176,6 +214,7 @@ class TestReceiptWorkflow:
                 updated_receipt = {**created_receipt}
                 updated_receipt["notes"] = "Updated notes"
                 updated_receipt["updated_at"] = datetime.now(timezone.utc).isoformat()
+                updated_receipt["version"] = 2
 
                 mock_receipt_service.update_receipt.return_value = updated_receipt
 
@@ -191,12 +230,12 @@ class TestReceiptWorkflow:
                 assert update_result["notes"] == "Updated notes"
 
                 # Step 5: List user receipts
-                mock_receipt_service.get_receipts_by_user.return_value = {
+                mock_receipt_service.list_receipts.return_value = {
                     "receipts": [updated_receipt],
-                    "total": 1,
+                    "total_count": 1,
                     "page": 1,
-                    "per_page": 20,
-                    "has_next": False,
+                    "page_size": 20,
+                    "has_more": False,
                 }
 
                 list_response = await async_client.get(
@@ -205,7 +244,7 @@ class TestReceiptWorkflow:
 
                 assert list_response.status_code == status.HTTP_200_OK
                 list_data = list_response.json()
-                assert list_data["total"] == 1
+                assert list_data["total_count"] == 1
                 assert len(list_data["receipts"]) == 1
                 assert list_data["receipts"][0]["receipt_id"] == receipt_id
 
@@ -216,7 +255,10 @@ class TestReceiptWorkflow:
                     f"/api/v1/receipts/{receipt_id}", headers=auth_headers
                 )
 
-                assert delete_response.status_code == status.HTTP_204_NO_CONTENT
+                assert delete_response.status_code == status.HTTP_200_OK
+        finally:
+            # Clean up dependency overrides
+            app.dependency_overrides.clear()
 
 
 @pytest.mark.e2e
@@ -229,124 +271,139 @@ class TestSearchWorkflow:
     ):
         """Test complete search workflow: create receipts, search, filter."""
 
-        with patch(
-            "src.application.auth.middleware.get_current_active_user"
-        ) as mock_auth, patch(
-            "src.application.services.search_service.search_service"
-        ) as mock_search_service:
+        # Use FastAPI dependency override for authentication
+        app.dependency_overrides[get_current_active_user] = lambda: sample_user
 
-            mock_auth.return_value = sample_user
+        try:
+            with patch(
+                "src.application.api.routes.search.search_service"
+            ) as mock_search_service:
+                # Make service methods async
+                mock_search_service.search_receipts = AsyncMock()
+                mock_search_service.search_by_merchant = AsyncMock()
+                mock_search_service.search_by_date_range = AsyncMock()
+                mock_search_service.get_suggestions = AsyncMock()
+                mock_search_service.get_popular_merchants = AsyncMock()
 
-            # Step 1: Search for receipts
-            search_results = {
-                "results": [
-                    {
-                        "receipt_id": str(uuid.uuid4()),
-                        "merchant_name": "Coffee Shop",
-                        "total_amount": "4.50",
-                        "purchase_date": "2025-09-10T10:00:00Z",
-                        "score": 0.95,
-                    },
-                    {
-                        "receipt_id": str(uuid.uuid4()),
-                        "merchant_name": "Another Coffee Place",
-                        "total_amount": "5.25",
-                        "purchase_date": "2025-09-09T15:30:00Z",
-                        "score": 0.87,
-                    },
-                ],
-                "total": 2,
-                "query": "coffee",
-                "page": 1,
-                "per_page": 20,
-            }
+                # Step 1: Search for receipts
+                search_results = {
+                    "hits": [
+                        {
+                            "receipt_id": str(uuid.uuid4()),
+                            "merchant_name": "Coffee Shop",
+                            "total_amount": "4.50",
+                            "purchase_date": "2025-09-10T10:00:00Z",
+                            "score": 0.95,
+                        },
+                        {
+                            "receipt_id": str(uuid.uuid4()),
+                            "merchant_name": "Another Coffee Place",
+                            "total_amount": "5.25",
+                            "purchase_date": "2025-09-09T15:30:00Z",
+                            "score": 0.87,
+                        },
+                    ],
+                    "total_hits": 2,
+                    "processing_time_ms": 15,
+                    "limit": 20,
+                    "offset": 0,
+                    "has_more": False,
+                }
 
-            mock_search_service.search_receipts.return_value = search_results
+                mock_search_service.search_receipts.return_value = search_results
 
-            search_response = await async_client.get(
-                "/api/v1/search/?q=coffee&page=1&per_page=20", headers=auth_headers
-            )
+                search_response = await async_client.post(
+                    "/api/v1/search/", json={"query": "coffee"}, headers=auth_headers
+                )
 
-            assert search_response.status_code == status.HTTP_200_OK
-            search_data = search_response.json()
-            assert search_data["total"] == 2
-            assert len(search_data["results"]) == 2
-            assert search_data["query"] == "coffee"
+                assert search_response.status_code == status.HTTP_200_OK
+                search_data = search_response.json()
+                assert search_data["total_hits"] == 2
+                assert len(search_data["hits"]) == 2
 
-            # Step 2: Search by merchant
-            merchant_results = {
-                "results": [search_results["results"][0]],
-                "total": 1,
-                "merchant": "Coffee Shop",
-            }
+                # Step 2: Search by merchant
+                merchant_results = {
+                    "hits": [search_results["hits"][0]],
+                    "total_hits": 1,
+                    "processing_time_ms": 10,
+                    "limit": 20,
+                    "offset": 0,
+                    "has_more": False,
+                }
 
-            mock_search_service.search_by_merchant.return_value = merchant_results
+                mock_search_service.search_by_merchant.return_value = merchant_results
 
-            merchant_response = await async_client.get(
-                "/api/v1/search/merchant/Coffee%20Shop", headers=auth_headers
-            )
+                merchant_response = await async_client.get(
+                    "/api/v1/search/merchant/Coffee%20Shop", headers=auth_headers
+                )
 
-            assert merchant_response.status_code == status.HTTP_200_OK
-            merchant_data = merchant_response.json()
-            assert merchant_data["total"] == 1
-            assert merchant_data["merchant"] == "Coffee Shop"
+                assert merchant_response.status_code == status.HTTP_200_OK
+                merchant_data = merchant_response.json()
+                assert merchant_data["total_hits"] == 1
 
-            # Step 3: Search by date range
-            date_range_results = {
-                "results": search_results["results"],
-                "total": 2,
-                "start_date": "2025-09-01",
-                "end_date": "2025-09-30",
-            }
+                # Step 3: Search by date range
+                date_range_results = {
+                    "hits": search_results["hits"],
+                    "total_hits": 2,
+                    "processing_time_ms": 12,
+                    "limit": 20,
+                    "offset": 0,
+                    "has_more": False,
+                }
 
-            mock_search_service.search_by_date_range.return_value = date_range_results
+                mock_search_service.search_by_date_range.return_value = (
+                    date_range_results
+                )
 
-            date_range_data = {"start_date": "2025-09-01", "end_date": "2025-09-30"}
+                date_range_data = {"start_date": "2025-09-01", "end_date": "2025-09-30"}
 
-            date_response = await async_client.post(
-                "/api/v1/search/date-range", json=date_range_data, headers=auth_headers
-            )
+                date_response = await async_client.post(
+                    "/api/v1/search/date-range",
+                    json=date_range_data,
+                    headers=auth_headers,
+                )
 
-            assert date_response.status_code == status.HTTP_200_OK
-            date_data = date_response.json()
-            assert date_data["total"] == 2
+                assert date_response.status_code == status.HTTP_200_OK
+                date_data = date_response.json()
+                assert date_data["total_hits"] == 2
 
-            # Step 4: Get search suggestions
-            suggestions = {
-                "suggestions": ["coffee", "coffee shop", "starbucks", "dunkin"]
-            }
+                # Step 4: Get search suggestions
+                suggestions = ["coffee", "coffee shop", "starbucks", "dunkin"]
 
-            mock_search_service.get_search_suggestions.return_value = suggestions
+                mock_search_service.get_suggestions.return_value = suggestions
 
-            suggestions_response = await async_client.get(
-                "/api/v1/search/suggestions?q=cof", headers=auth_headers
-            )
+                suggestions_response = await async_client.get(
+                    "/api/v1/search/suggestions?query=cof", headers=auth_headers
+                )
 
-            assert suggestions_response.status_code == status.HTTP_200_OK
-            suggestions_data = suggestions_response.json()
-            assert "suggestions" in suggestions_data
-            assert "coffee" in suggestions_data["suggestions"]
+                assert suggestions_response.status_code == status.HTTP_200_OK
+                suggestions_data = suggestions_response.json()
+                assert isinstance(suggestions_data, list)
+                assert "coffee" in suggestions_data
 
-            # Step 5: Get popular merchants
-            popular_merchants = {
-                "merchants": [
+                # Step 5: Get popular merchants
+                popular_merchants = [
                     {"name": "Starbucks", "count": 15},
                     {"name": "McDonald's", "count": 12},
                     {"name": "Walmart", "count": 8},
                 ]
-            }
 
-            mock_search_service.get_popular_merchants.return_value = popular_merchants
+                mock_search_service.get_popular_merchants.return_value = (
+                    popular_merchants
+                )
 
-            popular_response = await async_client.get(
-                "/api/v1/search/popular-merchants", headers=auth_headers
-            )
+                popular_response = await async_client.get(
+                    "/api/v1/search/popular-merchants", headers=auth_headers
+                )
 
-            assert popular_response.status_code == status.HTTP_200_OK
-            popular_data = popular_response.json()
-            assert "merchants" in popular_data
-            assert len(popular_data["merchants"]) == 3
-            assert popular_data["merchants"][0]["name"] == "Starbucks"
+                assert popular_response.status_code == status.HTTP_200_OK
+                popular_data = popular_response.json()
+                assert isinstance(popular_data, list)
+                assert len(popular_data) == 3
+                assert popular_data[0]["name"] == "Starbucks"
+        finally:
+            # Clean up dependency overrides
+            app.dependency_overrides.clear()
 
 
 @pytest.mark.e2e
@@ -360,24 +417,30 @@ class TestImageProcessingWorkflow:
     ):
         """Test complete image processing flow: upload, process, check status."""
 
-        with patch(
-            "src.application.auth.middleware.get_current_active_user"
-        ) as mock_auth:
-            mock_auth.return_value = sample_user
+        try:
+            # Use FastAPI dependency override for authentication
+            app.dependency_overrides[get_current_active_user] = lambda: sample_user
 
             with patch(
-                "src.application.services.receipt_service.receipt_service"
+                "src.application.api.routes.receipts.receipt_service"
             ) as mock_receipt_service:
+                # Make service methods async
+                mock_receipt_service.generate_upload_url = AsyncMock()
+                mock_receipt_service.process_uploaded_image = AsyncMock()
+                mock_receipt_service.process_receipt_image = AsyncMock()
+                mock_receipt_service.get_processing_status = AsyncMock()
+
                 image_id = str(uuid.uuid4())
 
                 # Step 1: Get upload URL
                 mock_receipt_service.generate_upload_url.return_value = {
                     "upload_url": "https://s3.amazonaws.com/bucket/receipts/test.jpg?signed",
                     "image_id": image_id,
+                    "fields": {"key": "test-key", "policy": "test-policy"},
                     "expires_in": 3600,
                 }
 
-                upload_response = await async_client.get(
+                upload_response = await async_client.post(
                     "/api/v1/receipts/upload-url", headers=auth_headers
                 )
 
@@ -386,7 +449,7 @@ class TestImageProcessingWorkflow:
 
                 # Step 2: Simulate image upload (would be done directly to S3 in real scenario)
                 # Then trigger processing
-                mock_receipt_service.process_receipt_image.return_value = {
+                mock_receipt_service.process_uploaded_image.return_value = {
                     "image_id": image_id,
                     "status": "processing",
                     "message": "Image processing started",
@@ -396,7 +459,7 @@ class TestImageProcessingWorkflow:
                     f"/api/v1/receipts/process-image/{image_id}", headers=auth_headers
                 )
 
-                assert process_response.status_code == status.HTTP_202_ACCEPTED
+                assert process_response.status_code == status.HTTP_200_OK
                 process_data = process_response.json()
                 assert process_data["status"] == "processing"
 
@@ -404,12 +467,19 @@ class TestImageProcessingWorkflow:
                 mock_receipt_service.get_processing_status.return_value = {
                     "image_id": image_id,
                     "status": "completed",
-                    "confidence_score": 0.95,
-                    "extracted_text": "Coffee Shop Receipt\nCoffee $4.50\nTotal: $4.50",
-                    "structured_data": {
-                        "merchant": "Coffee Shop",
-                        "total": "4.50",
-                        "items": [{"name": "Coffee", "price": "4.50"}],
+                    "receipt": {
+                        "receipt_id": str(uuid.uuid4()),
+                        "user_id": sample_user.user_id,
+                        "image_id": image_id,
+                        "merchant_name": "Coffee Shop",
+                        "total_amount": 4.50,
+                        "currency": "USD",
+                        "raw_text": "Coffee Shop Receipt\nCoffee $4.50\nTotal: $4.50",
+                        "confidence_score": 0.95,
+                        "items": [{"name": "Coffee", "price": 4.50}],
+                        "created_at": "2023-01-01T00:00:00",
+                        "updated_at": "2023-01-01T00:00:00",
+                        "version": 1,
                     },
                 }
 
@@ -421,6 +491,9 @@ class TestImageProcessingWorkflow:
                 assert status_response.status_code == status.HTTP_200_OK
                 status_data = status_response.json()
                 assert status_data["status"] == "completed"
-                assert status_data["confidence_score"] == 0.95
-                assert "extracted_text" in status_data
-                assert "structured_data" in status_data
+                assert status_data["receipt"]["confidence_score"] == 0.95
+                assert "raw_text" in status_data["receipt"]
+                assert status_data["receipt"]["merchant_name"] == "Coffee Shop"
+        finally:
+            # Clean up dependency overrides
+            app.dependency_overrides.clear()

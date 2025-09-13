@@ -29,12 +29,8 @@ from src.application.services.receipt_service import ReceiptService
 from src.application.services.search_service import SearchService
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Remove the custom event_loop fixture as it's deprecated
+# pytest-asyncio will provide the default one
 
 
 @pytest.fixture

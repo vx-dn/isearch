@@ -37,6 +37,10 @@ A serverless receipt search application built with AWS Lambda, FastAPI, and Meil
 
 3. **Install dependencies**:
    ```bash
+   # For development (includes testing, linting, etc.)
+   pip install -r requirements-dev.txt
+   
+   # For production (runtime only)
    pip install -r requirements.txt
    ```
 
@@ -51,6 +55,20 @@ A serverless receipt search application built with AWS Lambda, FastAPI, and Meil
 - **`.env.example`** shows the required variables (safe to commit)
 - Always copy `.env.example` to `.env` and modify with your actual values
 - The `.gitignore` file ensures `.env` files are excluded from git
+
+### Dependencies Structure
+
+This project uses separate requirements files for different environments:
+
+- **`requirements.txt`** - Runtime dependencies only (what the application imports)
+- **`requirements-dev.txt`** - Development dependencies (testing, linting, formatting)
+- **`requirements-prod.txt`** - Production optimizations (monitoring, WSGI servers)
+
+**Benefits:**
+- ✅ Smaller Docker images in production
+- ✅ Faster deployment installs  
+- ✅ Better security (fewer packages in production)
+- ✅ Clear separation of concerns
 
 ### Deployment
 
