@@ -53,8 +53,8 @@ variable "common_tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
   default = {
-    Project     = "receipt-search"
-    ManagedBy   = "terraform"
+    Project   = "receipt-search"
+    ManagedBy = "terraform"
   }
 }
 
