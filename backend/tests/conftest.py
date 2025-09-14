@@ -220,7 +220,15 @@ def fake_receipt_data():
         ),
         "currency": fake.random_element(elements=("USD", "EUR", "GBP")),
         "receipt_type": fake.random_element(
-            elements=("grocery", "restaurant", "gas", "retail", "medical", "business", "other")
+            elements=(
+                "grocery",
+                "restaurant",
+                "gas",
+                "retail",
+                "medical",
+                "business",
+                "other",
+            )
         ),
         "notes": fake.sentence(),
     }
