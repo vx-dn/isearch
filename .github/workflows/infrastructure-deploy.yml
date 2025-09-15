@@ -6,7 +6,7 @@ on:
       environment:
         description: 'Target environment'
         required: true
-        default: 'dev'
+        default: 'prod'
         type: choice
         options:
         - dev
@@ -34,7 +34,7 @@ on:
 
 env:
   AWS_REGION: ap-southeast-1
-  TF_VERSION: 1.12.0
+  TF_VERSION: 1.13.2
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -51,13 +51,13 @@ jobs:
       has-infrastructure-changes: ${{ steps.changes.outputs.infrastructure }}
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: 🔍 Detect infrastructure changes
         id: changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         with:
           filters: |
             infrastructure:
@@ -90,7 +90,7 @@ jobs:
       name: ${{ inputs.environment || 'dev' }}-infrastructure-plan
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -117,7 +117,7 @@ jobs:
 
       - name: 📄 Comment Plan Result
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const output = `#### Terraform Plan 📋 \`${{ steps.plan.outcome }}\`
@@ -152,7 +152,7 @@ jobs:
       url: ${{ steps.outputs.outputs.api_gateway_url }}
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -207,7 +207,7 @@ jobs:
       name: ${{ inputs.environment }}-infrastructure-destroy
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3

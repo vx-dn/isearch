@@ -1,0 +1,236 @@
+name: Test OIDC Connection
+
+# This workflow helps debug OIDC connection issues
+# Linter warnings about missing secrets are expected - that's what we're debugging!
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment to test'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+
+env:
+  AWS_REGION: ap-southeast-1
+
+permissions:
+  id-token: write   # Required for requesting JWT
+  contents: read    # Required for actions/checkout
+
+jobs:
+  test-oidc-connection:
+    name: 🔍 Test OIDC Connection
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Debug GitHub Context
+        run: |
+          echo "🔍 GitHub Context Information:"
+          echo "Repository: ${{ github.repository }}"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Event: ${{ github.event_name }}"
+    
+      - name: Debug OIDC sub
+        run: |
+          token=$(curl -s "$ACTIONS_ID_TOKEN_REQUEST_URL&aud=sts.amazonaws.com" \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
+          echo "🔑 OIDC sub:"
+          echo "$token" | cut -d . -f2 | base64 -d | jq -r .sub
+
+      - name: 🔍 Check Secrets Availability & Debug Info
+        id: check_secrets
+        shell: bash
+        run: |
+          echo "🔍 OIDC Debug Information:"
+          echo "Repository: ${{ github.repository }}"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo ""
+          
+          echo "🔐 Secret Availability Check:"
+          echo "Note: This step will show which secrets are available for debugging."
+          echo "Expected secrets for this workflow:"
+          echo "- AWS_ROLE_ARN_DEV (for dev environment)"
+          echo "- AWS_ROLE_ARN_STAGING (for staging environment)" 
+          echo "- AWS_ROLE_ARN_PROD (for prod environment)"
+          echo ""
+          
+          # Determine which secret should be used
+          case "${{ inputs.environment }}" in
+            prod) 
+              secret_name="AWS_ROLE_ARN_PROD"
+              echo "🎯 Environment 'prod' requires secret: AWS_ROLE_ARN_PROD"
+              ;;
+            staging) 
+              secret_name="AWS_ROLE_ARN_STAGING"
+              echo "🎯 Environment 'staging' requires secret: AWS_ROLE_ARN_STAGING"
+              ;;
+            *) 
+              secret_name="AWS_ROLE_ARN_DEV"
+              echo "🎯 Environment '${{ inputs.environment }}' requires secret: AWS_ROLE_ARN_DEV"
+              ;;
+          esac
+          
+          echo "secret_name=$secret_name" >> "$GITHUB_OUTPUT"
+          echo ""
+          echo "📋 Next steps will attempt to use secret: $secret_name"
+
+      - name: 🎯 Set Role ARN Based on Environment
+        id: select_role
+        shell: bash
+        run: |
+          echo "🎯 Attempting to select role for environment: ${{ inputs.environment }}"
+          secret_name="${{ steps.check_secrets.outputs.secret_name }}"
+          
+          # Try to get the role ARN based on environment
+          # Note: These may be empty if secrets aren't set up yet - that's what we're debugging!
+          case "${{ inputs.environment }}" in
+            prod)
+              role_arn="${{ secrets.AWS_ROLE_ARN_PROD }}"
+              ;;
+            staging)
+              role_arn="${{ secrets.AWS_ROLE_ARN_STAGING }}"
+              ;;
+            *)
+              role_arn="${{ secrets.AWS_ROLE_ARN_DEV }}"
+              ;;
+          esac
+          
+          echo "🔍 Debug: Role ARN length from secret: ${#role_arn}"
+          
+          if [ -z "$role_arn" ]; then
+            echo "❌ Secret $secret_name is empty or not set!"
+            echo ""
+            echo "🔧 OIDC Setup Instructions:"
+            echo "=================================="
+            echo "1. 📋 Create IAM Role in AWS:"
+            echo "   Role name: GitHubActions-Infrastructure-${{ inputs.environment }}"
+            echo "   Role ARN: arn:aws:iam::<YOUR_ACCOUNT_ID>:role/GitHubActions-Infrastructure-${{ inputs.environment }}"
+            echo ""
+            echo "2. 🔐 Add GitHub Secret:"
+            echo "   - Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "   - Click 'New repository secret'"
+            echo "   - Name: $secret_name"
+            echo "   - Value: arn:aws:iam::<YOUR_ACCOUNT_ID>:role/GitHubActions-Infrastructure-${{ inputs.environment }}"
+            echo ""
+            echo "3. �️ Configure IAM Trust Policy:"
+            echo "   The role must trust GitHub's OIDC provider for this repository"
+            echo ""
+            echo "💡 Alternative: Check if you're using environment-specific secrets"
+            echo "   - Repository secrets work for all environments"
+            echo "   - Environment secrets override repository secrets"
+            echo "   - Current environment: ${{ inputs.environment }}"
+            exit 1
+          fi
+          
+          # Basic pattern validation
+          if ! printf '%s' "$role_arn" | grep -Eq '^arn:aws:iam::[0-9]{12}:role/.+'; then
+            echo "❌ Role ARN format is invalid!"
+            echo "Secret: $secret_name"
+            echo "Expected format: arn:aws:iam::123456789012:role/RoleName"
+            echo "Actual format appears to be incorrect"
+            echo ""
+            echo "🔧 Please verify the secret value in:"
+            echo "   https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+          
+          echo "✅ Role ARN format is valid for secret: $secret_name"
+          echo "✅ Role ARN length: ${#role_arn} characters"
+          
+          # Set outputs for next steps
+          echo "role=$role_arn" >> "$GITHUB_OUTPUT"
+          echo "secret_name=$secret_name" >> "$GITHUB_OUTPUT"
+
+      - name: 🔐 Display Role Information
+        shell: bash
+        run: |
+          echo "🔐 Role Information:"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Secret used: ${{ steps.select_role.outputs.secret_name }}"
+          
+          # Assign to shell variable first for proper string interpolation
+          role_arn='${{ steps.select_role.outputs.role }}'
+          echo "Role ARN length (chars): ${#role_arn}"
+
+      - name: 🛡️ Validate Role ARN Format (Full)
+        shell: bash
+        run: |
+          echo "🛡️ Re-validating Role ARN format (defensive check)..."
+          ROLE_ARN='${{ steps.select_role.outputs.role }}'
+          if ! printf '%s' "$ROLE_ARN" | grep -Eq '^arn:aws:iam::[0-9]{12}:role/.+'; then
+            echo "❌ Invalid Role ARN format"
+            exit 1
+          fi
+          echo "✅ Role ARN format confirmed"
+
+      - name: ⚙️ Test AWS Credentials Configuration
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.select_role.outputs.role }}
+          role-session-name: GitHubActions-OIDC-Test-${{ inputs.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ✅ Verify AWS Connection
+        shell: bash
+        run: |
+          echo "✅ AWS Connection Test:"
+          aws sts get-caller-identity || { echo "❌ sts get-caller-identity failed"; exit 1; }
+          echo "🔍 Session Arn: $(aws sts get-caller-identity --query 'Arn' --output text)"
+
+      - name: 🎉 Success Summary
+        shell: bash
+        run: |
+          echo "🎉 OIDC Connection Test Results:"
+          echo "✅ Successfully assumed role (masked)"
+          echo "✅ Environment: ${{ inputs.environment }}"
+          echo "✅ Region: ${{ env.AWS_REGION }}"
+          echo "Secret: ${{ steps.select_role.outputs.secret_name }}"
+          echo "🔧 Your OIDC setup is working correctly!"
+
+      - name: 🚨 Failure Debugging
+        if: failure()
+        shell: bash
+        run: |
+          echo "🚨 OIDC Connection Failed!"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Repository: ${{ github.repository }}"
+          echo ""
+          echo "📋 Common Causes & Fixes:"
+          echo "1. Secret missing or empty (verify in repo or environment settings)." 
+          echo "2. Environment protection rules (approvals) not satisfied." 
+          echo "3. IAM trust policy missing OIDC provider or repo subject condition." 
+          echo "4. Role ARN typo in secret value." 
+          echo ""
+          echo "✅ Expected IAM Role Pattern:" 
+          echo "   arn:aws:iam::<ACCOUNT_ID>:role/GitHubActions-Infrastructure-${{ inputs.environment }}" 
+          echo ""
+          echo "🔐 Minimal Trust Policy (example):"
+          echo '{'
+          echo '  "Version": "2012-10-17",'
+          echo '  "Statement": ['
+          echo '    {'
+          echo '      "Effect": "Allow",'
+          echo '      "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com" },'
+          echo '      "Action": "sts:AssumeRoleWithWebIdentity",'
+          echo '      "Condition": {'
+          echo '        "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},'
+          echo '        "StringLike": {"token.actions.githubusercontent.com:sub": "repo:${{ github.repository }}:*"}'
+          echo '      }'
+          echo '    }'
+          echo '  ]'
+          echo '}'
+          echo ""
+          echo "🔁 After fixing, re-run the workflow."
