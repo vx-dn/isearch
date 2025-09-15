@@ -108,9 +108,21 @@ jobs:
         id: plan
         working-directory: infrastructure/terraform
         run: |
+          # Check if environment-specific tfvars file exists
+          ENV_NAME="${{ inputs.environment || 'dev' }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          if [ ! -f "$TFVARS_FILE" ]; then
+            echo "❌ Environment file $TFVARS_FILE not found!"
+            echo "Available environment files:"
+            ls -la environments/ || echo "No environments directory found"
+            exit 1
+          fi
+          
+          echo "✅ Using environment file: $TFVARS_FILE"
           terraform init
           terraform plan \
-            -var-file=environments/${{ inputs.environment || 'dev' }}.tfvars \
+            -var-file="$TFVARS_FILE" \
             -out=tfplan \
             -no-color
         continue-on-error: true
@@ -170,9 +182,21 @@ jobs:
       - name: 🚀 Terraform Apply
         working-directory: infrastructure/terraform
         run: |
+          # Check if environment-specific tfvars file exists
+          ENV_NAME="${{ inputs.environment || 'dev' }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          if [ ! -f "$TFVARS_FILE" ]; then
+            echo "❌ Environment file $TFVARS_FILE not found!"
+            echo "Available environment files:"
+            ls -la environments/ || echo "No environments directory found"
+            exit 1
+          fi
+          
+          echo "✅ Using environment file: $TFVARS_FILE"
           terraform init
           terraform apply \
-            -var-file=environments/${{ inputs.environment || 'dev' }}.tfvars \
+            -var-file="$TFVARS_FILE" \
             ${{ inputs.auto_approve && '-auto-approve' || '' }}
 
       - name: 📤 Export Terraform Outputs
@@ -224,9 +248,21 @@ jobs:
       - name: 🗑️ Terraform Destroy
         working-directory: infrastructure/terraform
         run: |
+          # Check if environment-specific tfvars file exists
+          ENV_NAME="${{ inputs.environment }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          if [ ! -f "$TFVARS_FILE" ]; then
+            echo "❌ Environment file $TFVARS_FILE not found!"
+            echo "Available environment files:"
+            ls -la environments/ || echo "No environments directory found"
+            exit 1
+          fi
+          
+          echo "✅ Using environment file: $TFVARS_FILE"
           terraform init
           terraform destroy \
-            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var-file="$TFVARS_FILE" \
             ${{ inputs.auto_approve && '-auto-approve' || '' }}
 
       - name: ⚠️ Destruction Complete
