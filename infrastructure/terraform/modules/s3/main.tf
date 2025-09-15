@@ -120,28 +120,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "receipts" {
   }
 }
 
-# Lambda permission for S3 bucket notifications
-resource "aws_lambda_permission" "s3_invoke" {
-  statement_id  = "AllowExecutionFromS3Bucket"
-  action        = "lambda:InvokeFunction"
-  function_name = "receipt-search-${var.environment}-image-processor"
-  principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.receipts.arn
-}
-
-# S3 bucket notification for Lambda trigger
-resource "aws_s3_bucket_notification" "receipts" {
-  bucket = aws_s3_bucket.receipts.id
-
-  lambda_function {
-    lambda_function_arn = "arn:aws:lambda:${var.region}:${var.account_id}:function:receipt-search-${var.environment}-image-processor"
-    events             = ["s3:ObjectCreated:*"]
-    filter_prefix      = "receipts/"
-    filter_suffix      = ""
-  }
-
-  depends_on = [aws_lambda_permission.s3_invoke]
-}
+# Note: Lambda permissions and S3 notifications are handled in the backend deployment
+# The Lambda function is deployed separately via the backend-deploy workflow
 
 # CORS configuration for presigned URL uploads
 resource "aws_s3_bucket_cors_configuration" "receipts" {
