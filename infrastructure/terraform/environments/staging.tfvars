@@ -1,7 +1,7 @@
-# Development environment configuration
+# Staging environment configuration
 
 # Environment-specific variables
-environment = "dev"
+environment = "staging"
 aws_region  = "ap-southeast-1"
 
 # User quotas
@@ -10,7 +10,7 @@ paid_user_image_quota = 1000
 free_user_retention_days = 30
 
 # Cognito domain (must be globally unique)
-cognito_domain_prefix = "receipt-search-dev"
+cognito_domain_prefix = "receipt-search-staging"
 
 # NOTE: Sensitive values like meilisearch_master_key are provided via GitHub secrets
 # and passed as environment variables to Terraform (TF_VAR_meilisearch_master_key)
@@ -18,7 +18,7 @@ cognito_domain_prefix = "receipt-search-dev"
 # Common tags
 common_tags = {
   Project     = "receipt-search"
-  Environment = "dev"
+  Environment = "staging"
   ManagedBy   = "terraform"
   Owner       = "development-team"
 }

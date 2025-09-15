@@ -69,6 +69,15 @@ Thumbs.db
 terraform.tfplan
 terraform.tfplan.*
 
+# Allow non-sensitive environment config files
+!infrastructure/terraform/environments/dev.tfvars
+!infrastructure/terraform/environments/staging.tfvars
+!infrastructure/terraform/environments/prod.tfvars
+
+# But exclude any files with secrets
+infrastructure/terraform/environments/*-secrets.tfvars
+infrastructure/terraform/environments/*.secret.tfvars
+
 # AWS
 .aws/
 *.pem

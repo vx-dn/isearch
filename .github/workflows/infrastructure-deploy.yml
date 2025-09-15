@@ -1,5 +1,14 @@
 name: Infrastructure Deployment
 
+# This workflow deploys Terraform infrastructure with environment-specific configurations
+# 
+# Required GitHub Secrets:
+# - AWS_ROLE_ARN_DEV, AWS_ROLE_ARN_STAGING, AWS_ROLE_ARN_PROD (for OIDC authentication)
+# - MEILISEARCH_MASTER_KEY_DEV, MEILISEARCH_MASTER_KEY_STAGING, MEILISEARCH_MASTER_KEY_PROD
+#
+# Non-sensitive configuration is stored in tfvars files committed to version control
+# Sensitive values are passed via GitHub secrets as TF_VAR_* environment variables
+
 on:
   workflow_dispatch:
     inputs:
@@ -107,6 +116,9 @@ jobs:
       - name: 📋 Terraform Plan
         id: plan
         working-directory: infrastructure/terraform
+        env:
+          # Sensitive variables passed via GitHub secrets
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
         run: |
           # Check if environment-specific tfvars file exists
           ENV_NAME="${{ inputs.environment || 'dev' }}"
@@ -120,6 +132,8 @@ jobs:
           fi
           
           echo "✅ Using environment file: $TFVARS_FILE"
+          echo "🔐 Sensitive variables provided via GitHub secrets"
+          
           terraform init
           terraform plan \
             -var-file="$TFVARS_FILE" \
@@ -181,6 +195,9 @@ jobs:
 
       - name: 🚀 Terraform Apply
         working-directory: infrastructure/terraform
+        env:
+          # Sensitive variables passed via GitHub secrets
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
         run: |
           # Check if environment-specific tfvars file exists
           ENV_NAME="${{ inputs.environment || 'dev' }}"
@@ -194,6 +211,18 @@ jobs:
           fi
           
           echo "✅ Using environment file: $TFVARS_FILE"
+          echo "🔐 Sensitive variables provided via GitHub secrets"
+          
+          # Validate that required sensitive variables are set
+          if [ -z "$TF_VAR_meilisearch_master_key" ]; then
+            echo "❌ Required secret MEILISEARCH_MASTER_KEY_* not set for environment: ${{ inputs.environment }}"
+            echo "Please set the appropriate GitHub secret:"
+            echo "- For dev: MEILISEARCH_MASTER_KEY_DEV"
+            echo "- For staging: MEILISEARCH_MASTER_KEY_STAGING" 
+            echo "- For prod: MEILISEARCH_MASTER_KEY_PROD"
+            exit 1
+          fi
+          
           terraform init
           terraform apply \
             -var-file="$TFVARS_FILE" \
@@ -247,6 +276,9 @@ jobs:
 
       - name: 🗑️ Terraform Destroy
         working-directory: infrastructure/terraform
+        env:
+          # Sensitive variables passed via GitHub secrets
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
         run: |
           # Check if environment-specific tfvars file exists
           ENV_NAME="${{ inputs.environment }}"
@@ -260,6 +292,8 @@ jobs:
           fi
           
           echo "✅ Using environment file: $TFVARS_FILE"
+          echo "🔐 Sensitive variables provided via GitHub secrets"
+          
           terraform init
           terraform destroy \
             -var-file="$TFVARS_FILE" \
