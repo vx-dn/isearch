@@ -70,8 +70,15 @@ jobs:
           ENV_NAME="${{ inputs.environment }}"
           TFVARS_FILE="${ENV_NAME}.tfvars"
           
+          echo "🔍 Current working directory: $(pwd)"
+          echo "📁 Directory contents:"
+          ls -la
+          echo "🎯 Looking for file: $TFVARS_FILE"
+          
           if [ ! -f "$TFVARS_FILE" ]; then
             echo "❌ Environment file $TFVARS_FILE not found!"
+            echo "Available files in $(pwd):"
+            ls -la *.tfvars 2>/dev/null || echo "No .tfvars files found"
             exit 1
           fi
           

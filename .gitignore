@@ -74,6 +74,11 @@ terraform.tfplan.*
 !infrastructure/terraform/environments/staging.tfvars
 !infrastructure/terraform/environments/prod.tfvars
 
+# Allow bootstrap configuration files  
+!infrastructure/terraform/bootstrap/dev.tfvars
+!infrastructure/terraform/bootstrap/staging.tfvars
+!infrastructure/terraform/bootstrap/prod.tfvars
+
 # But exclude any files with secrets
 infrastructure/terraform/environments/*-secrets.tfvars
 infrastructure/terraform/environments/*.secret.tfvars
