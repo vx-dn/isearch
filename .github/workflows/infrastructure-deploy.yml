@@ -134,7 +134,23 @@ jobs:
           echo "✅ Using environment file: $TFVARS_FILE"
           echo "🔐 Sensitive variables provided via GitHub secrets"
           
-          terraform init
+          # Get current AWS account ID for backend configuration
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BACKEND_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
+          BACKEND_TABLE="receipt-search-terraform-locks-$ENV_NAME"
+          
+          echo "🔧 Configuring remote state backend..."
+          echo "📦 State Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          
+          # Initialize with remote backend
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=$BACKEND_TABLE" \
+            -backend-config="encrypt=true"
+          
           terraform plan \
             -var-file="$TFVARS_FILE" \
             -out=tfplan \
@@ -223,7 +239,24 @@ jobs:
             exit 1
           fi
           
-          terraform init
+          # Get current AWS account ID for backend configuration
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BACKEND_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
+          BACKEND_TABLE="receipt-search-terraform-locks-$ENV_NAME"
+          
+          echo "� Configuring remote state backend..."
+          echo "📦 State Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          
+          # Initialize with remote backend
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=$BACKEND_TABLE" \
+            -backend-config="encrypt=true"
+          
+          echo "� Deploying infrastructure with remote state..."
           terraform apply \
             -var-file="$TFVARS_FILE" \
             ${{ inputs.auto_approve && '-auto-approve' || '' }}
@@ -294,7 +327,23 @@ jobs:
           echo "✅ Using environment file: $TFVARS_FILE"
           echo "🔐 Sensitive variables provided via GitHub secrets"
           
-          terraform init
+          # Get current AWS account ID for backend configuration
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BACKEND_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
+          BACKEND_TABLE="receipt-search-terraform-locks-$ENV_NAME"
+          
+          echo "🔧 Configuring remote state backend..."
+          echo "📦 State Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          
+          # Initialize with remote backend
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=$BACKEND_TABLE" \
+            -backend-config="encrypt=true"
+          
           terraform destroy \
             -var-file="$TFVARS_FILE" \
             ${{ inputs.auto_approve && '-auto-approve' || '' }}

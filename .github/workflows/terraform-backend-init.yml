@@ -1,0 +1,140 @@
+name: Initialize Terraform Backend
+
+# This workflow creates the S3 bucket and DynamoDB table required for Terraform remote state.
+# It should be run once per environment before the main infrastructure deployment.
+#
+# Required GitHub Secrets:
+# - AWS_ROLE_ARN_DEV, AWS_ROLE_ARN_STAGING, AWS_ROLE_ARN_PROD (for OIDC authentication)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'create'
+        type: choice
+        options:
+        - create
+        - destroy
+        - status
+
+env:
+  AWS_REGION: ap-southeast-1
+  TF_VERSION: 1.13.2
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  initialize-backend:
+    name: 🔧 Initialize Terraform Backend
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}-backend-init
+    outputs:
+      state-bucket: ${{ steps.backend.outputs.state_bucket_name }}
+      lock-table: ${{ steps.backend.outputs.lock_table_name }}
+      backend-config: ${{ steps.backend.outputs.backend_config }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: ⚙️ Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5.0.0
+        with:
+          role-to-assume: ${{ inputs.environment == 'prod' && secrets.AWS_ROLE_ARN_PROD || inputs.environment == 'staging' && secrets.AWS_ROLE_ARN_STAGING || secrets.AWS_ROLE_ARN_DEV }}
+          role-session-name: GitHubActions-BackendInit-${{ inputs.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔧 Initialize Backend Resources
+        id: backend
+        working-directory: infrastructure/terraform/bootstrap
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          TFVARS_FILE="${ENV_NAME}.tfvars"
+          
+          if [ ! -f "$TFVARS_FILE" ]; then
+            echo "❌ Environment file $TFVARS_FILE not found!"
+            exit 1
+          fi
+          
+          echo "✅ Using environment file: $TFVARS_FILE"
+          
+          # Initialize and plan
+          terraform init
+          
+          case "${{ inputs.action }}" in
+            "create")
+              echo "🔧 Creating backend resources..."
+              terraform plan -var-file="$TFVARS_FILE" -out=tfplan
+              terraform apply tfplan
+              
+              # Output backend configuration
+              echo "📤 Extracting backend configuration..."
+              STATE_BUCKET=$(terraform output -raw state_bucket_name)
+              LOCK_TABLE=$(terraform output -raw lock_table_name)
+              
+              echo "state_bucket_name=$STATE_BUCKET" >> $GITHUB_OUTPUT
+              echo "lock_table_name=$LOCK_TABLE" >> $GITHUB_OUTPUT
+              
+              # Output backend config for manual use
+              echo "🔧 Backend Configuration:"
+              terraform output backend_config
+              
+              echo "✅ Backend resources created successfully!"
+              echo "📝 Save the backend configuration for the next steps."
+              ;;
+              
+            "destroy")
+              echo "🗑️ Destroying backend resources..."
+              terraform plan -destroy -var-file="$TFVARS_FILE" -out=destroy-plan
+              terraform apply destroy-plan
+              echo "✅ Backend resources destroyed."
+              ;;
+              
+            "status")
+              echo "📊 Checking backend resource status..."
+              terraform plan -var-file="$TFVARS_FILE"
+              echo "✅ Status check completed."
+              ;;
+          esac
+
+      - name: 📋 Backend Summary
+        if: inputs.action == 'create'
+        run: |
+          echo "🎉 Terraform backend initialization completed!"
+          echo "🌍 Environment: ${{ inputs.environment }}"
+          echo "🪣 State Bucket: ${{ steps.backend.outputs.state_bucket_name }}"
+          echo "🔒 Lock Table: ${{ steps.backend.outputs.lock_table_name }}"
+          echo ""
+          echo "📝 Next Steps:"
+          echo "1. The backend resources have been created"
+          echo "2. Main infrastructure deployment will now use remote state"
+          echo "3. Run the infrastructure deployment workflow to deploy your application"
+
+      - name: ⚠️ Important Notes
+        if: inputs.action == 'create'
+        run: |
+          echo "⚠️ IMPORTANT NOTES:"
+          echo "• Backend resources are protected from accidental deletion"
+          echo "• State bucket has versioning enabled for rollback capabilities"
+          echo "• DynamoDB table provides state locking to prevent conflicts"
+          echo "• These resources incur minimal AWS costs"
+          echo "• Only destroy the backend if you're completely done with this environment"

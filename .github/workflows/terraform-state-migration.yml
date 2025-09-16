@@ -1,0 +1,206 @@
+name: Migrate Terraform State
+
+# This workflow migrates existing local Terraform state to remote S3 backend.
+# Use this when you have existing infrastructure managed with local state
+# that you want to move to remote state management.
+#
+# Prerequisites:
+# 1. Backend resources must already exist (run terraform-backend-init.yml first)
+# 2. Local state file must be present in the repository
+#
+# Required GitHub Secrets:
+# - AWS_ROLE_ARN_DEV, AWS_ROLE_ARN_STAGING, AWS_ROLE_ARN_PROD (for OIDC authentication)
+# - MEILISEARCH_MASTER_KEY_DEV, MEILISEARCH_MASTER_KEY_STAGING, MEILISEARCH_MASTER_KEY_PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      confirm_migration:
+        description: 'Type "MIGRATE" to confirm state migration (DANGEROUS operation)'
+        required: true
+        type: string
+      backup_local_state:
+        description: 'Create backup of local state before migration'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  AWS_REGION: ap-southeast-1
+  TF_VERSION: 1.13.2
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  migrate-state:
+    name: 🔄 Migrate Terraform State
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}-state-migration
+    steps:
+      - name: ✋ Validate Migration Confirmation
+        if: inputs.confirm_migration != 'MIGRATE'
+        run: |
+          echo "❌ Migration not confirmed!"
+          echo "You must type 'MIGRATE' in the confirmation field to proceed."
+          echo "This is a safety check to prevent accidental state migration."
+          exit 1
+
+      - name: 📥 Checkout code
+        uses: actions/checkout@v5
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: ⚙️ Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5.0.0
+        with:
+          role-to-assume: ${{ inputs.environment == 'prod' && secrets.AWS_ROLE_ARN_PROD || inputs.environment == 'staging' && secrets.AWS_ROLE_ARN_STAGING || secrets.AWS_ROLE_ARN_DEV }}
+          role-session-name: GitHubActions-StateMigration-${{ inputs.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔍 Pre-Migration Checks
+        working-directory: infrastructure/terraform
+        env:
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          if [ ! -f "$TFVARS_FILE" ]; then
+            echo "❌ Environment file $TFVARS_FILE not found!"
+            exit 1
+          fi
+          
+          echo "✅ Environment file found: $TFVARS_FILE"
+          
+          # Check if local state exists
+          if [ ! -f "terraform.tfstate" ]; then
+            echo "❌ Local terraform.tfstate file not found!"
+            echo "Nothing to migrate. If you need to import existing resources,"
+            echo "use the infrastructure-deploy workflow instead."
+            exit 1
+          fi
+          
+          echo "✅ Local state file found"
+          
+          # Get AWS account ID for backend configuration
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BACKEND_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
+          BACKEND_TABLE="receipt-search-terraform-locks-$ENV_NAME"
+          
+          echo "🔧 Backend Configuration:"
+          echo "📦 State Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          
+          # Verify backend resources exist
+          echo "🔍 Verifying backend resources exist..."
+          aws s3 ls "s3://$BACKEND_BUCKET" >/dev/null 2>&1 || {
+            echo "❌ Backend S3 bucket $BACKEND_BUCKET does not exist!"
+            echo "Please run the terraform-backend-init workflow first."
+            exit 1
+          }
+          
+          aws dynamodb describe-table --table-name "$BACKEND_TABLE" >/dev/null 2>&1 || {
+            echo "❌ Backend DynamoDB table $BACKEND_TABLE does not exist!"
+            echo "Please run the terraform-backend-init workflow first."
+            exit 1
+          }
+          
+          echo "✅ Backend resources verified"
+          
+          # Store values for next step
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_ENV
+          echo "BACKEND_BUCKET=$BACKEND_BUCKET" >> $GITHUB_ENV
+          echo "BACKEND_TABLE=$BACKEND_TABLE" >> $GITHUB_ENV
+
+      - name: 💾 Backup Local State
+        if: inputs.backup_local_state
+        working-directory: infrastructure/terraform
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BACKUP_FILE="terraform.tfstate.backup-${TIMESTAMP}"
+          
+          echo "💾 Creating backup of local state..."
+          cp terraform.tfstate "$BACKUP_FILE"
+          
+          echo "✅ Local state backed up to: $BACKUP_FILE"
+          echo "📁 Backup location: $(pwd)/$BACKUP_FILE"
+
+      - name: 🔄 Migrate State to Remote Backend
+        working-directory: infrastructure/terraform
+        env:
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          echo "🔄 Starting state migration..."
+          echo "📍 Migrating from: Local state file"
+          echo "📍 Migrating to: S3 backend"
+          echo "📦 Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          
+          # Initialize with remote backend configuration
+          echo "🔧 Initializing Terraform with remote backend..."
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=$BACKEND_TABLE" \
+            -backend-config="encrypt=true" \
+            -migrate-state \
+            -input=false
+          
+          echo "✅ State migration completed!"
+
+      - name: 🔍 Verify Remote State
+        working-directory: infrastructure/terraform
+        env:
+          TF_VAR_meilisearch_master_key: ${{ inputs.environment == 'prod' && secrets.MEILISEARCH_MASTER_KEY_PROD || inputs.environment == 'staging' && secrets.MEILISEARCH_MASTER_KEY_STAGING || secrets.MEILISEARCH_MASTER_KEY_DEV }}
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          TFVARS_FILE="environments/${ENV_NAME}.tfvars"
+          
+          echo "🔍 Verifying remote state..."
+          
+          # Check that state is now remote
+          terraform state list
+          
+          echo "✅ Remote state verification completed"
+          echo "📊 State is now managed remotely in S3"
+
+      - name: 🎉 Migration Summary
+        run: |
+          echo "🎉 Terraform state migration completed successfully!"
+          echo ""
+          echo "📋 Migration Summary:"
+          echo "🌍 Environment: ${{ inputs.environment }}"
+          echo "📦 State Bucket: $BACKEND_BUCKET"
+          echo "🔒 Lock Table: $BACKEND_TABLE"
+          echo "💾 Backup Created: ${{ inputs.backup_local_state && 'Yes' || 'No' }}"
+          echo ""
+          echo "✅ Next Steps:"
+          echo "1. Your Terraform state is now stored remotely in S3"
+          echo "2. State locking is enabled via DynamoDB"
+          echo "3. Team members can now collaborate safely"
+          echo "4. All future terraform operations will use remote state"
+          echo ""
+          echo "⚠️ Important:"
+          echo "• The local terraform.tfstate file can now be safely removed"
+          echo "• Remote state is encrypted and versioned"
+          echo "• State locking prevents concurrent modifications"
