@@ -15,7 +15,7 @@ on:
       environment:
         description: 'Target environment'
         required: true
-        default: 'prod'
+        default: 'dev'
         type: choice
         options:
         - dev
@@ -31,19 +31,21 @@ on:
         - apply
         - destroy
       auto_approve:
-        description: 'Auto-approve terraform apply (use with caution)'
+        description: 'Auto-approve terraform apply (NOT allowed for prod)'
         required: false
         default: false
         type: boolean
-  push:
-    branches: [ main ]
-    paths:
-      - 'infrastructure/**'
-      - '.github/workflows/infrastructure-deploy.yml'
+  # REMOVED: Dangerous auto-apply on push to main
+  # Infrastructure changes should always be manual and reviewed
 
 env:
   AWS_REGION: ap-southeast-1
   TF_VERSION: 1.13.2
+  TARGET_ENV: ${{ inputs.environment || 'dev' }}
+
+concurrency:
+  group: terraform-infrastructure-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false  # Don't cancel running terraform operations
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -101,6 +103,13 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
 
+      - name: 🛡️ Production Safety Check
+        if: inputs.environment == 'prod' && inputs.auto_approve == true
+        run: |
+          echo "❌ Auto-approve is not allowed for production environment!"
+          echo "Production deployments require manual approval for safety."
+          exit 1
+
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -157,6 +166,26 @@ jobs:
             -no-color
         continue-on-error: true
 
+      - name: 🔍 Analyze Plan for Destructive Changes
+        working-directory: infrastructure/terraform
+        run: |
+          if terraform show -json tfplan | jq -e '.resource_changes[]? | select(.change.actions[] | contains("delete"))' > /dev/null 2>&1; then
+            echo "⚠️ Plan contains destructive changes!"
+            echo "🔍 Resources to be deleted:"
+            terraform show -json tfplan | jq -r '.resource_changes[]? | select(.change.actions[] | contains("delete")) | .address'
+            echo ""
+            echo "Please review carefully before applying."
+          else
+            echo "✅ No destructive changes detected in plan."
+          fi
+
+      - name: 📤 Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ inputs.environment || 'dev' }}
+          path: infrastructure/terraform/tfplan
+          retention-days: 5
+
       - name: 📄 Comment Plan Result
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v8
@@ -188,13 +217,19 @@ jobs:
     name: 🚀 Deploy Infrastructure
     runs-on: ubuntu-latest
     needs: [validate-infrastructure, terraform-plan]
-    if: ${{ (inputs.terraform_action == 'apply' && github.event_name == 'workflow_dispatch') || (github.ref == 'refs/heads/main' && needs.validate-infrastructure.outputs.has-infrastructure-changes == 'true') }}
+    if: ${{ inputs.terraform_action == 'apply' && github.event_name == 'workflow_dispatch' }}
     environment: 
       name: ${{ inputs.environment || 'dev' }}-infrastructure
       url: ${{ steps.outputs.outputs.api_gateway_url }}
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
+
+      - name: 📥 Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ inputs.environment || 'dev' }}
+          path: infrastructure/terraform/
 
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -210,6 +245,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: 🚀 Terraform Apply
+        id: apply
         working-directory: infrastructure/terraform
         env:
           # Sensitive variables passed via GitHub secrets
@@ -244,7 +280,7 @@ jobs:
           BACKEND_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
           BACKEND_TABLE="receipt-search-terraform-locks-$ENV_NAME"
           
-          echo "� Configuring remote state backend..."
+          echo "🔧 Configuring remote state backend..."
           echo "📦 State Bucket: $BACKEND_BUCKET"
           echo "🔒 Lock Table: $BACKEND_TABLE"
           
@@ -256,10 +292,29 @@ jobs:
             -backend-config="dynamodb_table=$BACKEND_TABLE" \
             -backend-config="encrypt=true"
           
-          echo "� Deploying infrastructure with remote state..."
-          terraform apply \
-            -var-file="$TFVARS_FILE" \
-            ${{ inputs.auto_approve && '-auto-approve' || '' }}
+          # Apply using the previously generated and approved plan
+          if [ -f "tfplan" ]; then
+            echo "🚀 Applying previously generated plan..."
+            terraform apply tfplan
+          else
+            echo "⚠️ No plan file found, generating new plan..."
+            terraform apply \
+              -var-file="$TFVARS_FILE" \
+              ${{ inputs.auto_approve == true && '-auto-approve' || '' }}
+          fi
+        continue-on-error: true
+
+      - name: 📊 Apply Results
+        if: always()
+        run: |
+          if [ "${{ steps.apply.outcome }}" = "failure" ]; then
+            echo "❌ Apply failed! Check logs above."
+            echo "🔍 State may be in an inconsistent state."
+            echo "💡 Review and potentially run terraform apply manually."
+            exit 1
+          else
+            echo "✅ Apply completed successfully!"
+          fi
 
       - name: 📤 Export Terraform Outputs
         id: outputs
@@ -294,6 +349,21 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v5
+
+      - name: ⚠️ Destruction Confirmation
+        run: |
+          echo "⚠️ WARNING: This will destroy ALL infrastructure in ${{ inputs.environment }} environment!"
+          echo "🗑️ This action is IRREVERSIBLE!"
+          echo "📊 Resources that will be destroyed:"
+          echo "• S3 buckets and all data"
+          echo "• DynamoDB tables and all data"
+          echo "• Lambda functions"
+          echo "• API Gateway"
+          echo "• Cognito User Pools"
+          echo "• All other managed resources"
+          echo ""
+          echo "⏰ Sleeping for 10 seconds to allow cancellation..."
+          sleep 10
 
       - name: ⚙️ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -346,10 +416,12 @@ jobs:
           
           terraform destroy \
             -var-file="$TFVARS_FILE" \
-            ${{ inputs.auto_approve && '-auto-approve' || '' }}
+            ${{ inputs.auto_approve == true && '-auto-approve' || '' }}
 
       - name: ⚠️ Destruction Complete
         run: |
           echo "⚠️ Infrastructure destruction completed!"
           echo "🌍 Environment: ${{ inputs.environment }}"
           echo "🗑️ All resources have been destroyed."
+          echo "💾 Note: Terraform state and backend resources still exist."
+          echo "📝 Use terraform-backend-init workflow with 'destroy' action to remove backend."

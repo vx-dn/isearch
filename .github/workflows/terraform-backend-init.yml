@@ -27,10 +27,18 @@ on:
         - create
         - destroy
         - status
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm backend destruction (DANGEROUS)'
+        required: false
+        type: string
 
 env:
   AWS_REGION: ap-southeast-1
   TF_VERSION: 1.13.2
+
+concurrency:
+  group: terraform-backend-${{ inputs.environment }}
+  cancel-in-progress: false
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -63,6 +71,73 @@ jobs:
           role-session-name: GitHubActions-BackendInit-${{ inputs.environment }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: 🔍 Pre-action Safety Checks
+        id: safety-checks
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          STATE_BUCKET="receipt-search-terraform-state-$ENV_NAME-$ACCOUNT_ID"
+          LOCK_TABLE="receipt-search-terraform-locks-$ENV_NAME"
+          
+          echo "🔍 Checking backend resources for environment: $ENV_NAME"
+          echo "📦 Expected bucket: $STATE_BUCKET"
+          echo "🔒 Expected table: $LOCK_TABLE"
+          
+          # Check if bucket exists
+          BUCKET_EXISTS=false
+          if aws s3 ls "s3://$STATE_BUCKET" >/dev/null 2>&1; then
+            BUCKET_EXISTS=true
+            echo "✅ S3 bucket exists: $STATE_BUCKET"
+            
+            # Check if bucket has any state files
+            OBJECT_COUNT=$(aws s3 ls "s3://$STATE_BUCKET" --recursive | wc -l)
+            echo "📊 Objects in bucket: $OBJECT_COUNT"
+            
+            if [ "$OBJECT_COUNT" -gt 0 ]; then
+              echo "⚠️ Bucket contains $OBJECT_COUNT objects (including state files)"
+              echo "bucket_has_objects=true" >> $GITHUB_OUTPUT
+            else
+              echo "✅ Bucket is empty"
+              echo "bucket_has_objects=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ S3 bucket does not exist: $STATE_BUCKET"
+          fi
+          
+          # Check if DynamoDB table exists
+          TABLE_EXISTS=false
+          if aws dynamodb describe-table --table-name "$LOCK_TABLE" >/dev/null 2>&1; then
+            TABLE_EXISTS=true
+            echo "✅ DynamoDB table exists: $LOCK_TABLE"
+          else
+            echo "❌ DynamoDB table does not exist: $LOCK_TABLE"
+          fi
+          
+          echo "bucket_exists=$BUCKET_EXISTS" >> $GITHUB_OUTPUT
+          echo "table_exists=$TABLE_EXISTS" >> $GITHUB_OUTPUT
+          echo "state_bucket=$STATE_BUCKET" >> $GITHUB_OUTPUT
+          echo "lock_table=$LOCK_TABLE" >> $GITHUB_OUTPUT
+
+      - name: ⚠️ Validate Destroy Request
+        if: inputs.action == 'destroy'
+        run: |
+          if [ "${{ inputs.confirm_destroy }}" != "DESTROY" ]; then
+            echo "❌ Destroy action requires confirmation!"
+            echo "You must type 'DESTROY' in the confirmation field to proceed."
+            echo "This is a safety check to prevent accidental backend destruction."
+            exit 1
+          fi
+          
+          if [ "${{ steps.safety-checks.outputs.bucket_has_objects }}" = "true" ]; then
+            echo "❌ Cannot destroy backend with active state files!"
+            echo "The S3 bucket contains state files or other objects."
+            echo "Please ensure all infrastructure is destroyed first."
+            echo "To force destruction, manually empty the bucket first."
+            exit 1
+          fi
+          
+          echo "✅ Destroy request validated"
+
       - name: 🔧 Initialize Backend Resources
         id: backend
         working-directory: infrastructure/terraform/bootstrap
@@ -90,6 +165,16 @@ jobs:
           case "${{ inputs.action }}" in
             "create")
               echo "🔧 Creating backend resources..."
+              
+              # Check if resources already exist
+              if [ "${{ steps.safety-checks.outputs.bucket_exists }}" = "true" ] && [ "${{ steps.safety-checks.outputs.table_exists }}" = "true" ]; then
+                echo "⚠️ Backend resources already exist!"
+                echo "📦 Bucket: ${{ steps.safety-checks.outputs.state_bucket }}"
+                echo "🔒 Table: ${{ steps.safety-checks.outputs.lock_table }}"
+                echo "Use 'status' action to check existing backend instead."
+                exit 1
+              fi
+              
               terraform plan -var-file="$TFVARS_FILE" -out=tfplan
               terraform apply tfplan
               
@@ -111,6 +196,10 @@ jobs:
               
             "destroy")
               echo "🗑️ Destroying backend resources..."
+              echo "⚠️ WARNING: This will destroy the Terraform state backend!"
+              echo "⏰ Sleeping for 10 seconds to allow cancellation..."
+              sleep 10
+              
               terraform plan -destroy -var-file="$TFVARS_FILE" -out=destroy-plan
               terraform apply destroy-plan
               echo "✅ Backend resources destroyed."
@@ -118,7 +207,20 @@ jobs:
               
             "status")
               echo "📊 Checking backend resource status..."
-              terraform plan -var-file="$TFVARS_FILE"
+              terraform plan -var-file="$TFVARS_FILE" -detailed-exitcode || true
+              
+              echo "📋 Current Status:"
+              echo "📦 Bucket exists: ${{ steps.safety-checks.outputs.bucket_exists }}"
+              echo "🔒 Table exists: ${{ steps.safety-checks.outputs.table_exists }}"
+              echo "📊 Bucket has objects: ${{ steps.safety-checks.outputs.bucket_has_objects }}"
+              
+              if [ "${{ steps.safety-checks.outputs.bucket_exists }}" = "true" ]; then
+                echo "state_bucket_name=${{ steps.safety-checks.outputs.state_bucket }}" >> $GITHUB_OUTPUT
+              fi
+              if [ "${{ steps.safety-checks.outputs.table_exists }}" = "true" ]; then
+                echo "lock_table_name=${{ steps.safety-checks.outputs.lock_table }}" >> $GITHUB_OUTPUT
+              fi
+              
               echo "✅ Status check completed."
               ;;
           esac
@@ -145,3 +247,29 @@ jobs:
           echo "• DynamoDB table provides state locking to prevent conflicts"
           echo "• These resources incur minimal AWS costs"
           echo "• Only destroy the backend if you're completely done with this environment"
+          echo "• Always destroy all infrastructure before destroying the backend"
+
+      - name: 📊 Status Report
+        if: inputs.action == 'status'
+        run: |
+          echo "📊 Backend Status Report"
+          echo "🌍 Environment: ${{ inputs.environment }}"
+          echo "📦 Bucket Status: ${{ steps.safety-checks.outputs.bucket_exists == 'true' && 'EXISTS' || 'NOT_FOUND' }}"
+          echo "🔒 Table Status: ${{ steps.safety-checks.outputs.table_exists == 'true' && 'EXISTS' || 'NOT_FOUND' }}"
+          echo "📊 Objects in Bucket: ${{ steps.safety-checks.outputs.bucket_has_objects == 'true' && 'YES' || 'NO' }}"
+          
+          if [ "${{ steps.safety-checks.outputs.bucket_exists }}" = "true" ] && [ "${{ steps.safety-checks.outputs.table_exists }}" = "true" ]; then
+            echo "✅ Backend is properly configured and ready for use"
+          else
+            echo "⚠️ Backend is not fully configured"
+            echo "Run this workflow with 'create' action to set up the backend"
+          fi
+
+      - name: 🗑️ Destruction Summary
+        if: inputs.action == 'destroy'
+        run: |
+          echo "🗑️ Backend destruction completed!"
+          echo "🌍 Environment: ${{ inputs.environment }}"
+          echo "⚠️ All backend resources have been destroyed."
+          echo "💾 Any existing state files have been lost."
+          echo "🔄 Run with 'create' action to recreate the backend."
