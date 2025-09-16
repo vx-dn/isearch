@@ -59,6 +59,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
     id     = "terraform_state_lifecycle"
     status = "Enabled"
 
+    # Apply to all objects in the bucket
+    filter {}
+
     # Keep non-current versions for 30 days
     noncurrent_version_expiration {
       noncurrent_days = 30
