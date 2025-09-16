@@ -34,9 +34,9 @@ output "backend_config" {
   description = "Backend configuration values"
   value = {
     bucket         = aws_s3_bucket.terraform_state.bucket
-    key           = "terraform.tfstate"
-    region        = data.aws_region.current.name
+    key            = "terraform.tfstate"
+    region         = data.aws_region.current.name
     dynamodb_table = aws_dynamodb_table.terraform_locks.name
-    encrypt       = true
+    encrypt        = true
   }
 }

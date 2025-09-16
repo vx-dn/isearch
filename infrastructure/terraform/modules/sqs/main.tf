@@ -17,9 +17,9 @@ variable "common_tags" {
 
 # Dead Letter Queue for failed processing
 resource "aws_sqs_queue" "dead_letter" {
-  name                       = "${var.name_prefix}-processing-dlq"
-  message_retention_seconds  = 1209600 # 14 days
-  
+  name                      = "${var.name_prefix}-processing-dlq"
+  message_retention_seconds = 1209600 # 14 days
+
   tags = merge(var.common_tags, {
     Name = "${var.name_prefix}-processing-dlq"
     Type = "dead-letter-queue"
@@ -30,10 +30,10 @@ resource "aws_sqs_queue" "dead_letter" {
 resource "aws_sqs_queue" "processing" {
   name                       = "${var.name_prefix}-processing-queue"
   delay_seconds              = 0
-  max_message_size          = 262144 # 256 KB
+  max_message_size           = 262144  # 256 KB
   message_retention_seconds  = 1209600 # 14 days
-  receive_wait_time_seconds  = 20 # Long polling
-  visibility_timeout_seconds = 300 # 5 minutes
+  receive_wait_time_seconds  = 20      # Long polling
+  visibility_timeout_seconds = 300     # 5 minutes
 
   # Dead letter queue configuration
   redrive_policy = jsonencode({

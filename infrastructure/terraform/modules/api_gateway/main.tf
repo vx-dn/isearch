@@ -35,7 +35,7 @@ resource "aws_api_gateway_rest_api" "main" {
       "/{proxy+}" = {
         x-amazon-apigateway-any-method = {
           x-amazon-apigateway-integration = {
-            type                 = "AWS_PROXY"
+            type                = "AWS_PROXY"
             httpMethod          = "POST"
             uri                 = "arn:aws:apigateway:${data.aws_region.current.id}:lambda:path/2015-03-31/functions/arn:aws:lambda:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:function:${var.name_prefix}-api-handler/invocations"
             passthroughBehavior = "WHEN_NO_MATCH"
@@ -187,9 +187,9 @@ resource "aws_api_gateway_method_settings" "main" {
   method_path = "*/*"
 
   settings {
-    metrics_enabled    = true
-    logging_level      = "INFO"
-    data_trace_enabled = false
+    metrics_enabled        = true
+    logging_level          = "INFO"
+    data_trace_enabled     = false
     throttling_rate_limit  = 100
     throttling_burst_limit = 200
   }
@@ -197,8 +197,8 @@ resource "aws_api_gateway_method_settings" "main" {
 
 # API Gateway usage plan
 resource "aws_api_gateway_usage_plan" "main" {
-  name         = "${var.name_prefix}-usage-plan"
-  description  = "Usage plan for Receipt Search API"
+  name        = "${var.name_prefix}-usage-plan"
+  description = "Usage plan for Receipt Search API"
 
   api_stages {
     api_id = aws_api_gateway_rest_api.main.id
@@ -288,7 +288,7 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
   namespace           = "AWS/ApiGateway"
   period              = "300"
   statistic           = "Average"
-  threshold           = "5000"  # 5 seconds
+  threshold           = "5000" # 5 seconds
   alarm_description   = "This metric monitors api gateway latency"
 
   dimensions = {

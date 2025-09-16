@@ -22,7 +22,7 @@ output "backend_config_file" {
 
 output "next_steps" {
   description = "Instructions for next steps"
-  value = <<-EOT
+  value       = <<-EOT
     Backend resources created successfully!
     
     Next steps:

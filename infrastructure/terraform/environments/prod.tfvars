@@ -5,8 +5,8 @@ environment = "prod"
 aws_region  = "ap-southeast-1"
 
 # User quotas
-free_user_image_quota = 100
-paid_user_image_quota = 5000
+free_user_image_quota    = 100
+paid_user_image_quota    = 5000
 free_user_retention_days = 90
 
 # Cognito domain (must be globally unique)

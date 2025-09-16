@@ -35,7 +35,7 @@ resource "aws_cognito_user_pool" "main" {
 
   # Username configuration - allow email as username
   username_attributes = ["email"]
-  
+
   # Auto-verified attributes
   auto_verified_attributes = ["email"]
 
@@ -100,8 +100,8 @@ resource "aws_cognito_user_pool_client" "main" {
   user_pool_id = aws_cognito_user_pool.main.id
 
   # Token validity
-  access_token_validity  = 60  # 60 minutes
-  id_token_validity     = 60  # 60 minutes
+  access_token_validity  = 60 # 60 minutes
+  id_token_validity      = 60 # 60 minutes
   refresh_token_validity = 30 # 30 days
 
   token_validity_units {
@@ -122,15 +122,15 @@ resource "aws_cognito_user_pool_client" "main" {
 
   # OAuth configuration
   supported_identity_providers = ["COGNITO"]
-  
-  allowed_oauth_flows = ["code"]
+
+  allowed_oauth_flows  = ["code"]
   allowed_oauth_scopes = ["email", "openid", "profile"]
-  
+
   callback_urls = [
-    "http://localhost:3000/callback",  # Development
-    "https://your-frontend-domain.com/callback"  # Production - update this
+    "http://localhost:3000/callback",           # Development
+    "https://your-frontend-domain.com/callback" # Production - update this
   ]
-  
+
   logout_urls = [
     "http://localhost:3000/logout",
     "https://your-frontend-domain.com/logout"
@@ -138,7 +138,7 @@ resource "aws_cognito_user_pool_client" "main" {
 
   # Security
   generate_secret = false
-  
+
   # Read and write attributes
   read_attributes  = ["email", "custom:role"]
   write_attributes = ["email"]

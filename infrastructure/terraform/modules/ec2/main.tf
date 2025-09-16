@@ -237,8 +237,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "meilisearch_backups" {
 locals {
   user_data = templatefile("${path.module}/user_data.sh", {
     meilisearch_master_key = var.meilisearch_master_key
-    backup_bucket         = aws_s3_bucket.meilisearch_backups.bucket
-    region               = data.aws_region.current.id
+    backup_bucket          = aws_s3_bucket.meilisearch_backups.bucket
+    region                 = data.aws_region.current.id
   })
 }
 
@@ -246,10 +246,10 @@ locals {
 resource "aws_instance" "meilisearch" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t3.micro"
-  key_name              = aws_key_pair.meilisearch.key_name
+  key_name               = aws_key_pair.meilisearch.key_name
   vpc_security_group_ids = [aws_security_group.meilisearch.id]
-  subnet_id             = var.private_subnet_id
-  iam_instance_profile  = aws_iam_instance_profile.meilisearch.name
+  subnet_id              = var.private_subnet_id
+  iam_instance_profile   = aws_iam_instance_profile.meilisearch.name
 
   user_data                   = local.user_data
   user_data_replace_on_change = true

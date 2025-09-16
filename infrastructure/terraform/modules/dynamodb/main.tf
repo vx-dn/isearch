@@ -32,9 +32,9 @@ variable "free_user_retention_days" {
 
 # DynamoDB table for receipts
 resource "aws_dynamodb_table" "receipts" {
-  name           = "${var.name_prefix}-receipts"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "receipt_id"
+  name         = "${var.name_prefix}-receipts"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "receipt_id"
 
   attribute {
     name = "receipt_id"
@@ -90,9 +90,9 @@ resource "aws_dynamodb_table" "receipts" {
 
 # DynamoDB table for users
 resource "aws_dynamodb_table" "users" {
-  name           = "${var.name_prefix}-users"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_id"
+  name         = "${var.name_prefix}-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
 
   attribute {
     name = "user_id"
@@ -141,9 +141,9 @@ resource "aws_dynamodb_table" "users" {
 
 # DynamoDB table for application configuration
 resource "aws_dynamodb_table" "config" {
-  name           = "${var.name_prefix}-config"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "config_key"
+  name         = "${var.name_prefix}-config"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "config_key"
 
   attribute {
     name = "config_key"

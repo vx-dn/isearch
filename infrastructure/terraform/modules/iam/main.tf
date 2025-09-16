@@ -428,8 +428,8 @@ resource "aws_iam_role_policy" "eventbridge_cleanup_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = "lambda:InvokeFunction"
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
         Resource = "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.name_prefix}-cleanup-worker"
       }
     ]
